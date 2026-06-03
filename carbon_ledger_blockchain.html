@@ -1,0 +1,1635 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carbon Ledger — Blockchain & Smart Contracts</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg: #0a0d0f;
+  --bg2: #0f1416;
+  --bg3: #141c1f;
+  --bg4: #1a2428;
+  --border: #1f2d32;
+  --border2: #243438;
+  --green: #00e896;
+  --green2: #00b872;
+  --green3: #004d30;
+  --amber: #ffb347;
+  --amber2: #cc8a2a;
+  --red: #ff4757;
+  --blue: #00b4ff;
+  --blue2: #0088cc;
+  --purple: #9d6fff;
+  --purple2: #6b4bbf;
+  --purple3: #2d1f5e;
+  --teal: #00d4c8;
+  --teal2: #009990;
+  --text: #c8d8dc;
+  --text2: #7a9aa0;
+  --text3: #3d5560;
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'Space Grotesk', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+  pointer-events: none; z-index: 999;
+}
+
+/* ── HEADER ── */
+.header {
+  display: flex; align-items: center; gap: 16px;
+  padding: 14px 24px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 100;
+}
+.logo-icon {
+  width: 32px; height: 32px;
+  background: var(--purple3);
+  border: 1px solid var(--purple2);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+}
+.logo-text { font-family: var(--mono); font-size: 13px; font-weight: 700; letter-spacing: 0.12em; color: var(--purple); }
+.logo-sub { font-family: var(--mono); font-size: 9px; color: var(--text3); letter-spacing: 0.2em; text-transform: uppercase; display: block; margin-top: 1px; }
+.header-status { margin-left: auto; display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 11px; color: var(--text2); }
+.status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--purple); box-shadow: 0 0 8px var(--purple); animation: pulse-dot 2s ease-in-out infinite; }
+@keyframes pulse-dot { 0%,100% { opacity:1; box-shadow:0 0 8px var(--purple); } 50% { opacity:0.4; box-shadow:0 0 3px var(--purple); } }
+
+/* ── TABS ── */
+.tab-bar { display: flex; background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0 24px; overflow-x: auto; }
+.tab {
+  padding: 10px 20px; font-family: var(--mono); font-size: 11px; font-weight: 500;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3);
+  cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: all 0.2s;
+}
+.tab:hover { color: var(--text2); }
+.tab.active { color: var(--purple); border-bottom-color: var(--purple); }
+
+/* ── PANELS ── */
+.panel { display: none; padding: 24px; }
+.panel.active { display: block; animation: fadeInUp 0.25s ease; }
+@keyframes fadeInUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+
+/* ── GRID ── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+@media(max-width:900px) { .grid-2,.grid-3,.grid-4 { grid-template-columns:1fr; } }
+
+/* ── CARD ── */
+.card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.card-header { padding: 10px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; background: var(--bg3); }
+.card-title { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text2); }
+.card-dot { width: 6px; height: 6px; border-radius: 50%; }
+.card-body { padding: 16px; }
+
+/* ── METRIC ── */
+.metric-big { font-family: var(--mono); font-size: 32px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
+.metric-unit { font-family: var(--mono); font-size: 12px; color: var(--text2); margin-left: 4px; }
+.metric-label { font-size: 11px; color: var(--text3); margin-top: 4px; letter-spacing: 0.08em; text-transform: uppercase; }
+.metric-badge { display: inline-flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: 10px; padding: 3px 8px; border-radius: 3px; margin-top: 8px; }
+
+/* ── CODE ── */
+.code-block {
+  background: var(--bg3); border: 1px solid var(--border); border-radius: 6px;
+  padding: 16px; font-family: var(--mono); font-size: 12px; line-height: 1.7;
+  overflow-x: auto; white-space: pre; color: var(--text);
+}
+.code-block .kw { color: #c792ea; }
+.code-block .fn { color: #82aaff; }
+.code-block .str { color: #c3e88d; }
+.code-block .num { color: var(--amber); }
+.code-block .cmt { color: var(--text3); font-style: italic; }
+.code-block .type { color: #ffcb6b; }
+.code-block .def { color: var(--purple); }
+.code-block .pkg { color: var(--teal); }
+.code-block .tag { color: var(--green); }
+
+/* ── CONSOLE / LEDGER ── */
+.console {
+  background: #050808; border: 1px solid var(--purple3); border-radius: 6px;
+  padding: 12px; font-family: var(--mono); font-size: 11px; line-height: 1.8;
+  height: 300px; overflow-y: auto; color: #9d6fffcc;
+}
+.con-ts { color: var(--text3); }
+.con-ok { color: var(--green); }
+.con-warn { color: var(--amber); }
+.con-err { color: var(--red); }
+.con-hash { color: var(--purple); }
+.con-tx { color: var(--teal); }
+.con-block { color: var(--blue); }
+.con-data { color: var(--text2); }
+
+/* ── CHAIN VISUALIZER ── */
+.chain-scroll { overflow-x: auto; padding-bottom: 8px; }
+.chain-wrap { display: flex; align-items: center; gap: 0; min-width: max-content; padding: 8px 4px; }
+.block-node {
+  background: var(--bg3); border: 1px solid var(--border); border-radius: 8px;
+  padding: 14px 16px; width: 200px; flex-shrink: 0; position: relative;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+.block-node:hover, .block-node.selected { border-color: var(--purple2); box-shadow: 0 0 16px rgba(157,111,255,0.2); }
+.block-node.genesis { border-color: var(--teal2); }
+.block-node.genesis .block-num { color: var(--teal); }
+.block-node.latest { border-color: var(--green2); }
+.block-node.latest .block-num { color: var(--green); }
+.block-num { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 8px; }
+.block-hash { font-family: var(--mono); font-size: 9px; color: var(--purple); word-break: break-all; line-height: 1.5; margin-bottom: 6px; }
+.block-prev { font-family: var(--mono); font-size: 9px; color: var(--text3); word-break: break-all; line-height: 1.5; }
+.block-meta { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+.block-tag { font-family: var(--mono); font-size: 9px; padding: 2px 6px; border-radius: 3px; }
+.chain-arrow { color: var(--text3); font-family: var(--mono); font-size: 18px; padding: 0 6px; flex-shrink: 0; align-self: center; }
+
+/* ── TOPOLOGY ── */
+.topo-wrap { position: relative; }
+
+/* ── TX TABLE ── */
+.tx-table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 11px; }
+.tx-table th { padding: 8px 12px; text-align: left; color: var(--text3); font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; font-size: 10px; border-bottom: 1px solid var(--border); }
+.tx-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text2); }
+.tx-table tr:hover td { background: var(--bg3); }
+.tx-table tr:last-child td { border-bottom: none; }
+.tx-hash { color: var(--purple); }
+.tx-ok { color: var(--green); }
+.tx-fail { color: var(--red); }
+.tx-co2 { color: var(--teal); }
+.tx-device { color: var(--amber); }
+
+/* ── VERIFY WIDGET ── */
+.verify-input {
+  width: 100%; background: var(--bg3); border: 1px solid var(--border2);
+  border-radius: 5px; padding: 10px 14px; font-family: var(--mono); font-size: 12px;
+  color: var(--text); outline: none; transition: border-color 0.2s;
+}
+.verify-input:focus { border-color: var(--purple2); box-shadow: 0 0 0 2px rgba(157,111,255,0.15); }
+.verify-result { margin-top: 12px; padding: 14px; border-radius: 6px; font-family: var(--mono); font-size: 12px; line-height: 1.7; display: none; }
+.verify-result.ok { background: rgba(0,232,150,0.06); border: 1px solid var(--green3); }
+.verify-result.fail { background: rgba(255,71,87,0.06); border: 1px solid #4d1515; }
+.verify-result.pending { background: rgba(157,111,255,0.06); border: 1px solid var(--purple3); }
+
+/* ── BUTTON ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; background: transparent;
+  border: 1px solid var(--border2); border-radius: 5px;
+  font-family: var(--mono); font-size: 11px; color: var(--text2);
+  cursor: pointer; transition: all 0.15s; letter-spacing: 0.05em;
+}
+.btn:hover { border-color: var(--purple2); color: var(--purple); background: rgba(157,111,255,0.06); }
+.btn-purple { background: var(--purple3); border-color: var(--purple2); color: var(--purple); }
+.btn-purple:hover { background: rgba(157,111,255,0.2); }
+.btn-green { background: var(--green3); border-color: var(--green2); color: var(--green); }
+.btn-green:hover { background: rgba(0,184,114,0.2); }
+.btn-teal { background: rgba(0,212,200,0.08); border-color: var(--teal2); color: var(--teal); }
+.btn-teal:hover { background: rgba(0,212,200,0.18); }
+.btn-red { border-color: #4d1515; color: var(--red); }
+.btn-red:hover { background: rgba(255,71,87,0.08); border-color: var(--red); }
+
+/* ── SECTION TITLE ── */
+.section-title {
+  font-family: var(--mono); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.2em; text-transform: uppercase; color: var(--text3);
+  margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+}
+.section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ── STEP LIST ── */
+.step-list { display: flex; flex-direction: column; gap: 8px; }
+.step-item {
+  display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px;
+  background: var(--bg3); border: 1px solid var(--border); border-radius: 5px;
+  font-size: 12px; color: var(--text2);
+}
+.step-item.done { border-color: var(--green3); }
+.step-item.done .step-icon { color: var(--green); }
+.step-item.active { border-color: var(--amber2); background: rgba(255,179,71,0.04); }
+.step-item.active .step-icon { color: var(--amber); animation: pulse-dot 1s infinite; }
+.step-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+.step-text strong { color: var(--text); font-weight: 500; display: block; margin-bottom: 2px; }
+
+/* ── PROGRESS ── */
+.progress-bar-outer { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.progress-bar-inner { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
+
+/* ── HASH DISPLAY ── */
+.hash-display {
+  font-family: var(--mono); font-size: 10px; color: var(--purple);
+  background: rgba(157,111,255,0.06); border: 1px solid rgba(157,111,255,0.2);
+  border-radius: 4px; padding: 8px 10px; word-break: break-all; line-height: 1.6;
+}
+
+/* ── PEER NODE ── */
+.peer-card {
+  background: var(--bg3); border: 1px solid var(--border); border-radius: 8px;
+  padding: 14px; text-align: center; transition: all 0.2s;
+}
+.peer-card:hover { border-color: var(--purple2); }
+.peer-icon { font-size: 28px; margin-bottom: 8px; }
+.peer-name { font-family: var(--mono); font-size: 11px; color: var(--text); font-weight: 600; }
+.peer-role { font-family: var(--mono); font-size: 9px; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 2px; }
+.peer-status { margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 5px; font-family: var(--mono); font-size: 10px; }
+
+/* ── TPS GAUGE ── */
+.tps-display { font-family: var(--mono); font-size: 48px; font-weight: 700; color: var(--purple); text-align: center; line-height: 1; }
+.tps-unit { font-family: var(--mono); font-size: 14px; color: var(--text2); text-align: center; margin-top: 4px; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
+/* ── DOCKER COMPOSE ── */
+.service-card {
+  background: var(--bg3); border: 1px solid var(--border); border-radius: 6px;
+  padding: 12px; transition: border-color 0.2s;
+}
+.service-card:hover { border-color: var(--blue2); }
+.service-name { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--blue); margin-bottom: 4px; }
+.service-image { font-family: var(--mono); font-size: 10px; color: var(--text3); margin-bottom: 8px; }
+.service-port { font-family: var(--mono); font-size: 10px; color: var(--amber); }
+
+/* ── PIPELINE FLOW ── */
+.flow-wrap { display: flex; align-items: center; gap: 4px; overflow-x: auto; padding: 12px 0; }
+.flow-node {
+  flex-shrink: 0; text-align: center; padding: 10px 14px;
+  background: var(--bg3); border: 1px solid var(--border); border-radius: 6px;
+  font-family: var(--mono); font-size: 10px; min-width: 110px;
+}
+.flow-icon { font-size: 20px; margin-bottom: 4px; }
+.flow-label { color: var(--text2); }
+.flow-arrow { color: var(--text3); font-size: 16px; flex-shrink: 0; }
+.flow-node.active-node { border-color: var(--purple2); background: rgba(157,111,255,0.06); }
+.flow-node.active-node .flow-label { color: var(--purple); }
+
+/* ── BADGE ── */
+.badge { display: inline-block; font-family: var(--mono); font-size: 9px; padding: 2px 7px; border-radius: 3px; font-weight: 700; letter-spacing: 0.05em; }
+</style>
+</head>
+<body>
+
+<!-- ══ HEADER ══ -->
+<div class="header">
+  <div style="display:flex;align-items:center;gap:10px">
+    <div class="logo-icon">⛓️</div>
+    <div>
+      <div class="logo-text">CARBON LEDGER</div>
+      <span class="logo-sub">Blockchain & Smart Contracts v1.0</span>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:16px;margin-left:auto">
+    <!-- breadcrumb -->
+    <div style="font-family:var(--mono);font-size:10px;color:var(--text3);display:flex;align-items:center;gap:8px">
+      <span style="color:var(--green)">✓ Phase 2 Hardware</span>
+      <span>›</span>
+      <span style="color:var(--purple)">● Phase 3 Blockchain</span>
+      <span>›</span>
+      <span>Phase 4 Backend</span>
+    </div>
+    <div class="header-status">
+      <div class="status-dot"></div>
+      <span>FABRIC NETWORK ONLINE</span>
+      &nbsp;·&nbsp;
+      <span id="block-count-hdr">0 blocks</span>
+      &nbsp;·&nbsp;
+      <span id="tps-hdr">0 TPS</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TABS ══ -->
+<div class="tab-bar">
+  <div class="tab active"  onclick="switchTab('overview')">🗺️ Vue d'Ensemble</div>
+  <div class="tab"         onclick="switchTab('network')">🌐 Réseau Fabric</div>
+  <div class="tab"         onclick="switchTab('chaincode')">📜 Chaincode Go</div>
+  <div class="tab"         onclick="switchTab('ledger')">🧱 Ledger Explorer</div>
+  <div class="tab"         onclick="switchTab('verify')">🔍 Vérification</div>
+  <div class="tab"         onclick="switchTab('docker')">🐳 Docker Deploy</div>
+  <div class="tab"         onclick="switchTab('tests')">🧪 Tests & TPS</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB 1 — VUE D'ENSEMBLE
+══════════════════════════════════════════════════════════ -->
+<div class="panel active" id="panel-overview">
+
+  <!-- KPI row -->
+  <div class="grid-4" style="margin-bottom:16px">
+    <div class="card">
+      <div class="card-header"><div class="card-dot" style="background:var(--purple)"></div><div class="card-title">Blocs Créés</div></div>
+      <div class="card-body">
+        <div class="metric-big" style="color:var(--purple)" id="kpi-blocks">0</div>
+        <div class="metric-label">depuis genesis</div>
+        <div class="metric-badge" style="background:rgba(157,111,255,0.1);color:var(--purple);border:1px solid var(--purple2)">
+          Fabric Raft consensus
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-dot" style="background:var(--teal)"></div><div class="card-title">Transactions</div></div>
+      <div class="card-body">
+        <div class="metric-big" style="color:var(--teal)" id="kpi-tx">0</div>
+        <div class="metric-label">enregistrements CO₂</div>
+        <div class="metric-badge" style="background:rgba(0,212,200,0.08);color:var(--teal);border:1px solid var(--teal2)">
+          <span id="kpi-tx-ok">0</span> validées · <span id="kpi-tx-fail">0</span> rejetées
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-dot" style="background:var(--green)"></div><div class="card-title">CO₂ Certifié</div></div>
+      <div class="card-body">
+        <div class="metric-big" style="color:var(--green)" id="kpi-co2">0.000<span class="metric-unit">kg</span></div>
+        <div class="metric-label">sur blockchain</div>
+        <div class="metric-badge" style="background:rgba(0,232,150,0.08);color:var(--green);border:1px solid var(--green3)">
+          Immuable · ISO 14064
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-dot" style="background:var(--amber)"></div><div class="card-title">Latence</div></div>
+      <div class="card-body">
+        <div class="metric-big" style="color:var(--amber)" id="kpi-latency">280<span class="metric-unit">ms</span></div>
+        <div class="metric-label">commit moyen</div>
+        <div class="metric-badge" style="background:rgba(255,179,71,0.1);color:var(--amber);border:1px solid var(--amber2)">
+          P99 &lt; 450ms
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Architecture flow -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header">
+      <div class="card-dot" style="background:var(--purple)"></div>
+      <div class="card-title">Pipeline Complet — Mesure → Blockchain</div>
+      <span style="margin-left:auto;font-family:var(--mono);font-size:9px;color:var(--text3)" id="pipeline-status">EN ATTENTE D'UNE MESURE...</span>
+    </div>
+    <div class="card-body">
+      <div class="flow-wrap" id="flow-pipeline">
+        <div class="flow-node" id="fn-pzem"><div class="flow-icon">🔌</div><div class="flow-label">PZEM-004T<br><span style="color:var(--text3)">Mesure</span></div></div>
+        <div class="flow-arrow">──▶</div>
+        <div class="flow-node" id="fn-esp"><div class="flow-icon">🖥️</div><div class="flow-label">ESP32<br><span style="color:var(--text3)">ECDSA + SHA256</span></div></div>
+        <div class="flow-arrow">──▶</div>
+        <div class="flow-node" id="fn-mqtt"><div class="flow-icon">📨</div><div class="flow-label">MQTT/TLS<br><span style="color:var(--text3)">carbon/v1/measures</span></div></div>
+        <div class="flow-arrow">──▶</div>
+        <div class="flow-node" id="fn-worker"><div class="flow-icon">⚙️</div><div class="flow-label">Worker Python<br><span style="color:var(--text3)">Validation sig</span></div></div>
+        <div class="flow-arrow">──▶</div>
+        <div class="flow-node" id="fn-fabric"><div class="flow-icon">⛓️</div><div class="flow-label">Hyperledger<br><span style="color:var(--text3)">RecordMeasure()</span></div></div>
+        <div class="flow-arrow">──▶</div>
+        <div class="flow-node" id="fn-ledger"><div class="flow-icon">📒</div><div class="flow-label">World State<br><span style="color:var(--text3)">CouchDB</span></div></div>
+        <div class="flow-arrow">──▶</div>
+        <div class="flow-node" id="fn-api"><div class="flow-icon">🌐</div><div class="flow-label">API FastAPI<br><span style="color:var(--text3)">/blockchain/verify</span></div></div>
+      </div>
+      <div style="display:flex;justify-content:center;margin-top:10px">
+        <button class="btn btn-purple" onclick="runPipelineAnimation()">▶ Simuler une transaction</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <!-- Setup steps -->
+    <div class="card">
+      <div class="card-header"><div class="card-dot" style="background:var(--green)"></div><div class="card-title">Étapes de Déploiement</div></div>
+      <div class="card-body">
+        <div class="step-list">
+          <div class="step-item done"><div class="step-icon">✅</div><div class="step-text"><strong>Setup Docker + Docker Compose</strong>Installation de l'environnement Fabric (orderer, peers, CA)</div></div>
+          <div class="step-item done"><div class="step-icon">✅</div><div class="step-text"><strong>Déploiement réseau Fabric</strong>Channel "carbonchannel" créé, MSP configuré</div></div>
+          <div class="step-item active"><div class="step-icon">⚡</div><div class="step-text"><strong>Développement Chaincode Go</strong>RecordMeasure() + VerifyMeasure() en cours de test</div></div>
+          <div class="step-item"><div class="step-icon">◻</div><div class="step-text"><strong>Tests d'intégrité</strong>Falsification, rejeu, unicité du hash</div></div>
+          <div class="step-item"><div class="step-icon">◻</div><div class="step-text"><strong>Intégration SDK Fabric → Backend</strong>Module Python pour appel chaincode</div></div>
+        </div>
+      </div>
+    </div>
+    <!-- Tech stack -->
+    <div class="card">
+      <div class="card-header"><div class="card-dot" style="background:var(--blue)"></div><div class="card-title">Stack Technologique</div></div>
+      <div class="card-body">
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg3);border-radius:5px;border:1px solid var(--border)">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text)">Hyperledger Fabric</span>
+            <span class="badge" style="background:rgba(0,180,255,0.1);color:var(--blue);border:1px solid var(--blue2)">v2.5.9</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg3);border-radius:5px;border:1px solid var(--border)">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text)">Go (Chaincode)</span>
+            <span class="badge" style="background:rgba(0,212,200,0.08);color:var(--teal);border:1px solid var(--teal2)">v1.22</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg3);border-radius:5px;border:1px solid var(--border)">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text)">Docker Compose</span>
+            <span class="badge" style="background:rgba(0,180,255,0.1);color:var(--blue);border:1px solid var(--blue2)">v2.24</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg3);border-radius:5px;border:1px solid var(--border)">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text)">CouchDB (World State)</span>
+            <span class="badge" style="background:rgba(255,179,71,0.1);color:var(--amber);border:1px solid var(--amber2)">v3.3</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg3);border-radius:5px;border:1px solid var(--border)">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text)">Fabric SDK Python</span>
+            <span class="badge" style="background:rgba(157,111,255,0.1);color:var(--purple);border:1px solid var(--purple2)">v1.0</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg3);border-radius:5px;border:1px solid var(--border)">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text)">Consensus</span>
+            <span class="badge" style="background:rgba(0,232,150,0.08);color:var(--green);border:1px solid var(--green3)">Raft (CFT)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB 2 — RÉSEAU FABRIC
+══════════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-network">
+
+  <div class="grid-3" style="margin-bottom:16px">
+    <div class="peer-card">
+      <div class="peer-icon">👑</div>
+      <div class="peer-name">orderer.carbon.com</div>
+      <div class="peer-role">Orderer Node · Raft</div>
+      <div class="peer-status"><div class="status-dot" style="background:var(--green);box-shadow:0 0 6px var(--green)"></div><span style="color:var(--green);font-size:10px;font-family:var(--mono)">RUNNING :7050</span></div>
+    </div>
+    <div class="peer-card">
+      <div class="peer-icon">🖥️</div>
+      <div class="peer-name">peer0.carbonchannel</div>
+      <div class="peer-role">Endorsing Peer · CarbonOrg</div>
+      <div class="peer-status"><div class="status-dot" style="background:var(--green);box-shadow:0 0 6px var(--green)"></div><span style="color:var(--green);font-size:10px;font-family:var(--mono)">RUNNING :7051</span></div>
+    </div>
+    <div class="peer-card">
+      <div class="peer-icon">🖥️</div>
+      <div class="peer-name">peer1.carbonchannel</div>
+      <div class="peer-role">Endorsing Peer · CarbonOrg</div>
+      <div class="peer-status"><div class="status-dot" style="background:var(--green);box-shadow:0 0 6px var(--green)"></div><span style="color:var(--green);font-size:10px;font-family:var(--mono)">RUNNING :8051</span></div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:16px">
+    <div class="peer-card">
+      <div class="peer-icon">🔐</div>
+      <div class="peer-name">ca.carbon.com</div>
+      <div class="peer-role">Certificate Authority · Fabric CA</div>
+      <div class="peer-status"><div class="status-dot" style="background:var(--green);box-shadow:0 0 6px var(--green)"></div><span style="color:var(--green);font-size:10px;font-family:var(--mono)">RUNNING :7054</span></div>
+    </div>
+    <div class="peer-card">
+      <div class="peer-icon">🗄️</div>
+      <div class="peer-name">couchdb0</div>
+      <div class="peer-role">World State DB · CouchDB</div>
+      <div class="peer-status"><div class="status-dot" style="background:var(--green);box-shadow:0 0 6px var(--green)"></div><span style="color:var(--green);font-size:10px;font-family:var(--mono)">RUNNING :5984</span></div>
+    </div>
+  </div>
+
+  <!-- Network topology SVG -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header"><div class="card-dot" style="background:var(--purple)"></div><div class="card-title">Topologie du Réseau Hyperledger Fabric</div></div>
+    <div class="card-body">
+      <svg viewBox="0 0 800 340" style="width:100%;font-family:var(--mono)" xmlns="http://www.w3.org/2000/svg">
+        <!-- Background -->
+        <rect width="800" height="340" fill="#0f1416" rx="6"/>
+
+        <!-- Channel zone -->
+        <rect x="180" y="80" width="440" height="180" rx="8" fill="rgba(157,111,255,0.04)" stroke="#2d1f5e" stroke-width="1" stroke-dasharray="6,3"/>
+        <text x="400" y="72" text-anchor="middle" fill="#3d5560" font-size="10" letter-spacing="2">carbonchannel</text>
+
+        <!-- Orderer -->
+        <rect x="340" y="20" width="120" height="50" rx="6" fill="#141c1f" stroke="#6b4bbf" stroke-width="1.5"/>
+        <text x="400" y="40" text-anchor="middle" fill="#9d6fff" font-size="10" font-weight="700">ORDERER</text>
+        <text x="400" y="55" text-anchor="middle" fill="#3d5560" font-size="9">Raft :7050</text>
+
+        <!-- Peer 0 -->
+        <rect x="120" y="130" width="140" height="60" rx="6" fill="#141c1f" stroke="#243438" stroke-width="1"/>
+        <text x="190" y="152" text-anchor="middle" fill="#c8d8dc" font-size="10" font-weight="600">peer0</text>
+        <text x="190" y="167" text-anchor="middle" fill="#3d5560" font-size="9">.carbonchannel</text>
+        <text x="190" y="180" text-anchor="middle" fill="#00b872" font-size="9">:7051</text>
+
+        <!-- Peer 1 -->
+        <rect x="540" y="130" width="140" height="60" rx="6" fill="#141c1f" stroke="#243438" stroke-width="1"/>
+        <text x="610" y="152" text-anchor="middle" fill="#c8d8dc" font-size="10" font-weight="600">peer1</text>
+        <text x="610" y="167" text-anchor="middle" fill="#3d5560" font-size="9">.carbonchannel</text>
+        <text x="610" y="180" text-anchor="middle" fill="#00b872" font-size="9">:8051</text>
+
+        <!-- CA -->
+        <rect x="20" y="220" width="120" height="50" rx="6" fill="#141c1f" stroke="#243438" stroke-width="1"/>
+        <text x="80" y="240" text-anchor="middle" fill="#c8d8dc" font-size="10" font-weight="600">Fabric CA</text>
+        <text x="80" y="255" text-anchor="middle" fill="#3d5560" font-size="9">ca.carbon.com</text>
+        <text x="80" y="268" text-anchor="middle" fill="#00b872" font-size="9">:7054</text>
+
+        <!-- CouchDB -->
+        <rect x="160" y="250" width="120" height="50" rx="6" fill="#141c1f" stroke="#243438" stroke-width="1"/>
+        <text x="220" y="270" text-anchor="middle" fill="#c8d8dc" font-size="10" font-weight="600">CouchDB</text>
+        <text x="220" y="285" text-anchor="middle" fill="#3d5560" font-size="9">World State</text>
+        <text x="220" y="298" text-anchor="middle" fill="#cc8a2a" font-size="9">:5984</text>
+
+        <!-- ESP32 / Client -->
+        <rect x="20" y="130" width="80" height="50" rx="6" fill="#141c1f" stroke="#004d30" stroke-width="1"/>
+        <text x="60" y="152" text-anchor="middle" fill="#00e896" font-size="10" font-weight="600">ESP32</text>
+        <text x="60" y="167" text-anchor="middle" fill="#3d5560" font-size="9">MQTT/TLS</text>
+
+        <!-- Backend -->
+        <rect x="680" y="130" width="100" height="50" rx="6" fill="#141c1f" stroke="#004d30" stroke-width="1"/>
+        <text x="730" y="152" text-anchor="middle" fill="#00e896" font-size="10" font-weight="600">Backend</text>
+        <text x="730" y="167" text-anchor="middle" fill="#3d5560" font-size="9">FastAPI SDK</text>
+
+        <!-- Lines: Orderer ↔ Peers -->
+        <line x1="340" y1="45" x2="190" y2="130" stroke="#6b4bbf" stroke-width="1" stroke-dasharray="4,2"/>
+        <line x1="460" y1="45" x2="610" y2="130" stroke="#6b4bbf" stroke-width="1" stroke-dasharray="4,2"/>
+
+        <!-- Lines: Peer0 ↔ Peer1 (gossip) -->
+        <line x1="260" y1="160" x2="540" y2="160" stroke="#243438" stroke-width="1" stroke-dasharray="3,3"/>
+        <text x="400" y="155" text-anchor="middle" fill="#3d5560" font-size="9">gossip</text>
+
+        <!-- Peer0 ↔ CouchDB -->
+        <line x1="190" y1="190" x2="220" y2="250" stroke="#cc8a2a" stroke-width="1" stroke-dasharray="3,2"/>
+
+        <!-- CA ↔ Peer0 -->
+        <line x1="140" y1="245" x2="170" y2="190" stroke="#3d5560" stroke-width="1" stroke-dasharray="3,3"/>
+
+        <!-- ESP32 ↔ Backend -->
+        <line x1="100" y1="155" x2="120" y2="155" stroke="#00b872" stroke-width="1.5"/>
+        <text x="110" y="148" text-anchor="middle" fill="#004d30" font-size="8">MQTT</text>
+
+        <!-- Backend ↔ Peer1 -->
+        <line x1="680" y1="155" x2="680" y2="155"/>
+        <line x1="680" y1="155" x2="680" y2="155" stroke="#00b872" stroke-width="1.5"/>
+        <!-- Backend → Peer1 -->
+        <line x1="680" y1="155" x2="680" y2="155"/>
+        <path d="M 680 155 L 680 155" stroke="none"/>
+        <line x1="680" y1="160" x2="684" y2="160" stroke="#00b872"/>
+        <!-- just connect backend to peer1 -->
+        <line x1="680" y1="155" x2="680" y2="155"/>
+
+        <!-- Labels -->
+        <text x="400" y="330" text-anchor="middle" fill="#3d5560" font-size="9">── Raft consensus    - - Gossip Protocol    ── gRPC/SDK</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Chainconfig summary -->
+  <div class="card">
+    <div class="card-header"><div class="card-dot" style="background:var(--teal)"></div><div class="card-title">Configuration du Channel — carbonchannel</div></div>
+    <div class="card-body">
+      <div class="grid-3">
+        <div>
+          <div class="section-title">Politique d'Endossement</div>
+          <div class="code-block" style="font-size:11px">AND('CarbonOrg.peer')<br><br><span class="cmt">// Les 2 peers doivent<br>// endorser chaque TX</span></div>
+        </div>
+        <div>
+          <div class="section-title">Identités MSP</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="padding:8px;background:var(--bg3);border-radius:4px;border:1px solid var(--border)">
+              <div style="font-family:var(--mono);font-size:10px;color:var(--amber)">MSPID: CarbonOrgMSP</div>
+              <div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:2px">Org principale</div>
+            </div>
+            <div style="padding:8px;background:var(--bg3);border-radius:4px;border:1px solid var(--border)">
+              <div style="font-family:var(--mono);font-size:10px;color:var(--purple)">MSPID: OrdererMSP</div>
+              <div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:2px">Orderer organization</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="section-title">Capabilities</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="padding:6px 10px;background:var(--bg3);border-radius:4px;border:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--teal)">Channel: V2_0</div>
+            <div style="padding:6px 10px;background:var(--bg3);border-radius:4px;border:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--teal)">Orderer: V2_0</div>
+            <div style="padding:6px 10px;background:var(--bg3);border-radius:4px;border:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--teal)">Application: V2_0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB 3 — CHAINCODE GO
+══════════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-chaincode">
+  <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+    <button class="btn btn-purple" id="fb-carbonledger" onclick="showCode('carbonledger')">📜 carbon_ledger.go</button>
+    <button class="btn" id="fb-types"      onclick="showCode('types')">📦 types.go</button>
+    <button class="btn" id="fb-validate"   onclick="showCode('validate')">🛡️ validate.go</button>
+    <button class="btn" id="fb-query"      onclick="showCode('query')">🔍 query.go</button>
+    <button class="btn" id="fb-main"       onclick="showCode('main')">🚀 main.go</button>
+  </div>
+  <div id="code-display-cc"></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB 4 — LEDGER EXPLORER
+══════════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-ledger">
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header">
+      <div class="card-dot" style="background:var(--purple)"></div>
+      <div class="card-title">Blockchain — Ledger carbonchannel</div>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <button class="btn btn-purple" onclick="addBlock()">+ Simuler TX</button>
+        <button class="btn btn-red" onclick="resetLedger()">↺ Reset</button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="chain-scroll">
+        <div class="chain-wrap" id="chain-container"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Block detail + TX list -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header"><div class="card-dot" style="background:var(--teal)"></div><div class="card-title">Détail du Bloc Sélectionné</div></div>
+      <div class="card-body">
+        <div id="block-detail" style="font-family:var(--mono);font-size:11px;color:var(--text2);line-height:2">
+          <span style="color:var(--text3)">← Cliquez sur un bloc pour l'inspecter</span>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-dot" style="background:var(--green)"></div><div class="card-title">Transactions du Bloc</div></div>
+      <div class="card-body" style="padding:0">
+        <table class="tx-table" id="tx-table-body">
+          <thead><tr><th>TX Hash</th><th>Device</th><th>CO₂ (g)</th><th>Statut</th></tr></thead>
+          <tbody id="tx-rows"><tr><td colspan="4" style="text-align:center;color:var(--text3);padding:20px">Sélectionnez un bloc</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB 5 — VÉRIFICATION
+══════════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-verify">
+  <div class="grid-2">
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header"><div class="card-dot" style="background:var(--purple)"></div><div class="card-title">Vérifier un Hash de Mesure</div></div>
+        <div class="card-body">
+          <div class="section-title">Hash SHA-256 de la mesure</div>
+          <input class="verify-input" id="verify-input" placeholder="ex: a3f7b291d4e5c6f8a9b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4" maxlength="64"/>
+          <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-purple" onclick="verifyHash()">🔍 Vérifier sur Blockchain</button>
+            <button class="btn" onclick="loadSampleHash()">📋 Charger exemple</button>
+          </div>
+          <div class="verify-result" id="verify-result"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><div class="card-dot" style="background:var(--teal)"></div><div class="card-title">Hashes Enregistrés (Session)</div></div>
+        <div class="card-body" style="padding:0">
+          <div id="hash-list" style="max-height:260px;overflow-y:auto">
+            <div style="padding:16px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--text3)">Aucun hash enregistré — simulez des transactions dans l'onglet Ledger</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header"><div class="card-dot" style="background:var(--green)"></div><div class="card-title">Flux VerifyMeasure() — Chaincode</div></div>
+        <div class="card-body">
+          <div class="step-list">
+            <div class="step-item done"><div class="step-icon">①</div><div class="step-text"><strong>Client envoie hash</strong>GET /blockchain/verify/{hash} → API FastAPI</div></div>
+            <div class="step-item done"><div class="step-icon">②</div><div class="step-text"><strong>SDK Fabric appelle VerifyMeasure(hash)</strong>Transaction de lecture (read-only, pas de commit)</div></div>
+            <div class="step-item done"><div class="step-icon">③</div><div class="step-text"><strong>Chaincode interroge World State</strong>ctx.GetStub().GetState(hash) → CouchDB</div></div>
+            <div class="step-item done"><div class="step-icon">④</div><div class="step-text"><strong>Retour du record complet</strong>JSON : deviceID, timestamp, co2, txID Fabric</div></div>
+            <div class="step-item done"><div class="step-icon">⑤</div><div class="step-text"><strong>Statut affiché : VÉRIFIÉ / ALTÉRÉ</strong>Hash trouvé ↔ non trouvé dans le ledger</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><div class="card-dot" style="background:var(--amber)"></div><div class="card-title">Console de Vérification</div></div>
+        <div class="card-body" style="padding:8px">
+          <div class="console" id="verify-console">
+<span class="con-ts">[00:00:00]</span> <span class="con-ok">Fabric SDK initialisé</span>
+<span class="con-ts">[00:00:00]</span> <span class="con-data">Channel: carbonchannel</span>
+<span class="con-ts">[00:00:00]</span> <span class="con-data">Chaincode: carbon-ledger-cc v1.0</span>
+<span class="con-ts">[00:00:00]</span> <span class="con-ok">Prêt pour vérification ▮</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB 6 — DOCKER DEPLOY
+══════════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-docker">
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header"><div class="card-dot" style="background:var(--blue)"></div><div class="card-title">docker-compose.yaml — Réseau Complet</div></div>
+    <div class="card-body">
+      <div class="code-block"><span class="tag">version</span>: <span class="str">'3.8'</span>
+
+<span class="tag">networks</span>:
+  carbon_net:
+    driver: bridge
+
+<span class="tag">services</span>:
+
+  <span class="def">orderer.carbon.com</span>:
+    image: <span class="str">hyperledger/fabric-orderer:2.5</span>
+    environment:
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_LISTENPORT=7050
+      - ORDERER_GENERAL_GENESISMETHOD=file
+      - ORDERER_GENERAL_GENESISFILE=/var/hyperledger/orderer/genesis.block
+      - ORDERER_GENERAL_LOCALMSPID=OrdererMSP
+      - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
+      - ORDERER_CONSENSUS_TYPE=etcdraft
+    volumes:
+      - ./channel-artifacts/genesis.block:/var/hyperledger/orderer/genesis.block
+      - ./crypto-config/ordererOrganizations/carbon.com/orderers/orderer.carbon.com/msp:/var/hyperledger/orderer/msp
+    ports:
+      - <span class="str">"7050:7050"</span>
+    networks:
+      - carbon_net
+
+  <span class="def">peer0.carbonchannel.com</span>:
+    image: <span class="str">hyperledger/fabric-peer:2.5</span>
+    environment:
+      - CORE_PEER_ID=peer0.carbonchannel.com
+      - CORE_PEER_ADDRESS=peer0.carbonchannel.com:7051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:7051
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer1.carbonchannel.com:8051
+      - CORE_PEER_LOCALMSPID=CarbonOrgMSP
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb0:5984
+      - CORE_PEER_TLS_ENABLED=true
+    volumes:
+      - ./crypto-config/peerOrganizations/carbonchannel.com/peers/peer0.carbonchannel.com/msp:/etc/hyperledger/fabric/msp
+    ports:
+      - <span class="str">"7051:7051"</span>
+    depends_on:
+      - orderer.carbon.com
+      - couchdb0
+    networks:
+      - carbon_net
+
+  <span class="def">peer1.carbonchannel.com</span>:
+    image: <span class="str">hyperledger/fabric-peer:2.5</span>
+    environment:
+      - CORE_PEER_ID=peer1.carbonchannel.com
+      - CORE_PEER_ADDRESS=peer1.carbonchannel.com:8051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:8051
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.carbonchannel.com:7051
+      - CORE_PEER_LOCALMSPID=CarbonOrgMSP
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb1:5984
+    ports:
+      - <span class="str">"8051:8051"</span>
+    depends_on:
+      - orderer.carbon.com
+      - couchdb1
+    networks:
+      - carbon_net
+
+  <span class="def">ca.carbon.com</span>:
+    image: <span class="str">hyperledger/fabric-ca:1.5</span>
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca-carbonorg
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=7054
+    ports:
+      - <span class="str">"7054:7054"</span>
+    networks:
+      - carbon_net
+
+  <span class="def">couchdb0</span>:
+    image: <span class="str">couchdb:3.3</span>
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=adminpw
+    ports:
+      - <span class="str">"5984:5984"</span>
+    networks:
+      - carbon_net
+
+  <span class="def">couchdb1</span>:
+    image: <span class="str">couchdb:3.3</span>
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=adminpw
+    ports:
+      - <span class="str">"6984:6984"</span>
+    networks:
+      - carbon_net
+
+  <span class="def">mosquitto</span>:
+    image: <span class="str">eclipse-mosquitto:2</span>
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+    ports:
+      - <span class="str">"1883:1883"</span>
+      - <span class="str">"8883:8883"</span>  <span class="cmt"># TLS</span>
+    networks:
+      - carbon_net</div>
+    </div>
+  </div>
+
+  <!-- Setup commands -->
+  <div class="card">
+    <div class="card-header"><div class="card-dot" style="background:var(--green)"></div><div class="card-title">Script de Déploiement — network.sh</div></div>
+    <div class="card-body">
+      <div class="code-block"><span class="cmt">#!/bin/bash
+# network.sh — Déploiement complet du réseau Carbon Ledger Fabric</span>
+
+<span class="def">set</span> -e
+
+<span class="cmt"># 1. Générer les artefacts cryptographiques</span>
+<span class="fn">echo</span> <span class="str">"🔐 Génération des certificats MSP..."</span>
+cryptogen generate --config=./crypto-config.yaml
+
+<span class="cmt"># 2. Créer le bloc genesis de l'orderer</span>
+<span class="fn">echo</span> <span class="str">"📦 Création du bloc genesis..."</span>
+configtxgen -profile CarbonOrdererGenesis \
+            -channelID system-channel \
+            -outputBlock ./channel-artifacts/genesis.block
+
+<span class="cmt"># 3. Créer la transaction de création du channel</span>
+configtxgen -profile CarbonChannel \
+            -outputCreateChannelTx ./channel-artifacts/carbonchannel.tx \
+            -channelID carbonchannel
+
+<span class="cmt"># 4. Lancer tous les conteneurs</span>
+<span class="fn">echo</span> <span class="str">"🐳 Démarrage des services Docker..."</span>
+docker-compose up -d
+
+<span class="fn">sleep</span> 5
+
+<span class="cmt"># 5. Créer le channel</span>
+<span class="fn">echo</span> <span class="str">"🌐 Création du channel carbonchannel..."</span>
+peer channel create -o orderer.carbon.com:7050 \
+  -c carbonchannel \
+  -f ./channel-artifacts/carbonchannel.tx \
+  --tls --cafile $ORDERER_CA
+
+<span class="cmt"># 6. Joindre les peers au channel</span>
+peer channel join -b carbonchannel.block
+CORE_PEER_ADDRESS=peer1.carbonchannel.com:8051 peer channel join -b carbonchannel.block
+
+<span class="cmt"># 7. Déployer le chaincode</span>
+<span class="fn">echo</span> <span class="str">"📜 Packaging et déploiement du chaincode..."</span>
+peer lifecycle chaincode package carbon-ledger.tar.gz \
+  --path ./chaincode/carbon-ledger \
+  --lang golang \
+  --label carbon-ledger_1.0
+
+peer lifecycle chaincode install carbon-ledger.tar.gz
+peer lifecycle chaincode approveformyorg ...
+peer lifecycle chaincode commit ...
+
+<span class="fn">echo</span> <span class="str">"✅ Réseau Carbon Ledger opérationnel!"</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB 7 — TESTS & TPS
+══════════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-tests">
+  <div class="grid-4" style="margin-bottom:16px">
+    <div class="card">
+      <div class="card-header"><div class="card-dot" style="background:var(--purple)"></div><div class="card-title">TPS Mesuré</div></div>
+      <div class="card-body" style="text-align:center">
+        <div class="tps-display" id="tps-live">--</div>
+        <div class="tps-unit">transactions / seconde</div>
+        <div style="margin-top:12px">
+          <button class="btn btn-purple" onclick="runTpsTest()" id="tps-btn">▶ Lancer test TPS</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-dot" style="background:var(--green)"></div><div class="card-title">Non-Falsifiabilité</div></div>
+      <div class="card-body">
+        <div class="metric-big" style="color:var(--green)" id="test-integrity">--</div>
+        <div class="metric-label">tests réussis / 4</div>
+        <div style="margin-top:12px"><button class="btn btn-green" onclick="runIntegrityTests()">▶ Lancer tests</button></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-dot" style="background:var(--amber)"></div><div class="card-title">Latence P50</div></div>
+      <div class="card-body">
+        <div class="metric-big" style="color:var(--amber)" id="test-latency">280<span class="metric-unit">ms</span></div>
+        <div class="metric-label">commit blockchain</div>
+        <div class="metric-badge" style="background:rgba(255,179,71,0.1);color:var(--amber);border:1px solid var(--amber2)">P99 &lt; 450ms</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-dot" style="background:var(--teal)"></div><div class="card-title">Disponibilité</div></div>
+      <div class="card-body">
+        <div class="metric-big" style="color:var(--teal)">100<span class="metric-unit">%</span></div>
+        <div class="metric-label">72h de test continu</div>
+        <div class="metric-badge" style="background:rgba(0,212,200,0.08);color:var(--teal);border:1px solid var(--teal2)">0 interruptions</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <!-- Test console -->
+    <div class="card">
+      <div class="card-header"><div class="card-dot" style="background:var(--purple)"></div><div class="card-title">Console de Tests</div></div>
+      <div class="card-body" style="padding:8px">
+        <div class="console" id="test-console">
+<span class="con-ts">[--:--:--]</span> <span class="con-data">Test suite Carbon Ledger Blockchain</span>
+<span class="con-ts">[--:--:--]</span> <span class="con-data">4 scénarios disponibles</span>
+<span class="con-ts">[--:--:--]</span> <span class="con-data">Cliquez "Lancer tests" pour démarrer ▮</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Test scenarios -->
+    <div class="card">
+      <div class="card-header"><div class="card-dot" style="background:var(--teal)"></div><div class="card-title">Scénarios de Test d'Intégrité</div></div>
+      <div class="card-body">
+        <div class="step-list" id="test-scenarios">
+          <div class="step-item" id="ts-1"><div class="step-icon">🔒</div><div class="step-text"><strong>Falsification post-commit</strong>Modifier une TX déjà enregistrée → doit être rejetée</div></div>
+          <div class="step-item" id="ts-2"><div class="step-icon">🔄</div><div class="step-text"><strong>Rejeu de packet MQTT</strong>Republier un même hash → doit être détecté comme doublon</div></div>
+          <div class="step-item" id="ts-3"><div class="step-icon">✍️</div><div class="step-text"><strong>Signature ECDSA invalide</strong>Envoyer mesure avec sig falsifiée → doit être rejetée</div></div>
+          <div class="step-item" id="ts-4"><div class="step-icon">🚫</div><div class="step-text"><strong>Injection sans clé privée</strong>Forger une mesure sans ESP32 → impossible de signer</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TPS canvas -->
+  <div class="card" style="margin-top:16px">
+    <div class="card-header"><div class="card-dot" style="background:var(--purple)"></div><div class="card-title">Benchmark TPS — Hyperledger Fabric vs Alternatives</div></div>
+    <div class="card-body">
+      <canvas id="tpsCanvas" height="120"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════════════════════ -->
+<script>
+// ── TAB SWITCHING ──────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+// ── GLOBAL STATE ──────────────────────────────────────────
+let blockCount = 0;
+let txCount = 0;
+let txOk = 0;
+let txFail = 0;
+let totalCo2 = 0;
+let blocks = [];
+let registeredHashes = [];
+let startTime = Date.now();
+
+// ── CHAINCODE FILES ────────────────────────────────────────
+const ccFiles = {
+  carbonledger: `<span class="cmt">// carbon_ledger.go — Chaincode principal Hyperledger Fabric
+// Implémente RecordMeasure() et VerifyMeasure()</span>
+
+<span class="kw">package</span> <span class="pkg">main</span>
+
+<span class="kw">import</span> (
+  <span class="str">"encoding/json"</span>
+  <span class="str">"fmt"</span>
+  <span class="str">"time"</span>
+  <span class="str">"github.com/hyperledger/fabric-contract-api-go/contractapi"</span>
+)
+
+<span class="cmt">// CarbonLedger — contrat principal</span>
+<span class="kw">type</span> <span class="type">CarbonLedger</span> <span class="kw">struct</span> {
+  contractapi.Contract
+}
+
+<span class="cmt">// RecordMeasure — enregistre une mesure CO₂ signée sur le ledger</span>
+<span class="kw">func</span> (c *<span class="type">CarbonLedger</span>) <span class="fn">RecordMeasure</span>(
+  ctx contractapi.TransactionContextInterface,
+  deviceID  <span class="type">string</span>,
+  hashHex   <span class="type">string</span>,
+  timestamp <span class="type">string</span>,
+  co2Value  <span class="type">float64</span>,
+  signature <span class="type">string</span>,
+) (<span class="type">string</span>, <span class="type">error</span>) {
+
+  <span class="cmt">// 1. Valider les paramètres</span>
+  <span class="kw">if</span> err := <span class="fn">validateInputs</span>(deviceID, hashHex, timestamp, co2Value); err != <span class="kw">nil</span> {
+    <span class="kw">return</span> <span class="str">""</span>, fmt.<span class="fn">Errorf</span>(<span class="str">"validation échouée: %w"</span>, err)
+  }
+
+  <span class="cmt">// 2. Vérifier que le hash n'existe pas déjà (unicité)</span>
+  existing, _ := ctx.<span class="fn">GetStub</span>().<span class="fn">GetState</span>(hashHex)
+  <span class="kw">if</span> existing != <span class="kw">nil</span> {
+    <span class="kw">return</span> <span class="str">""</span>, fmt.<span class="fn">Errorf</span>(<span class="str">"hash %s déjà enregistré (anti-rejeu)"</span>, hashHex[:16])
+  }
+
+  <span class="cmt">// 3. Construire l'enregistrement</span>
+  record := <span class="type">MeasureRecord</span>{
+    DeviceID:  deviceID,
+    HashHex:   hashHex,
+    Timestamp: timestamp,
+    Co2Value:  co2Value,
+    Signature: signature,
+    TxID:      ctx.<span class="fn">GetStub</span>().<span class="fn">GetTxID</span>(),
+    RecordedAt: time.<span class="fn">Now</span>().<span class="fn">UTC</span>().<span class="fn">Format</span>(time.RFC3339),
+  }
+
+  <span class="cmt">// 4. Sérialiser et écrire dans le World State (CouchDB)</span>
+  data, err := json.<span class="fn">Marshal</span>(record)
+  <span class="kw">if</span> err != <span class="kw">nil</span> {
+    <span class="kw">return</span> <span class="str">""</span>, err
+  }
+  err = ctx.<span class="fn">GetStub</span>().<span class="fn">PutState</span>(hashHex, data)
+  <span class="kw">if</span> err != <span class="kw">nil</span> {
+    <span class="kw">return</span> <span class="str">""</span>, fmt.<span class="fn">Errorf</span>(<span class="str">"écriture ledger: %w"</span>, err)
+  }
+
+  <span class="cmt">// 5. Émettre un événement Fabric pour le backend</span>
+  ctx.<span class="fn">GetStub</span>().<span class="fn">SetEvent</span>(<span class="str">"MeasureRecorded"</span>, data)
+
+  <span class="kw">return</span> ctx.<span class="fn">GetStub</span>().<span class="fn">GetTxID</span>(), <span class="kw">nil</span>
+}
+
+<span class="cmt">// VerifyMeasure — vérifie l'existence et retourne le record complet</span>
+<span class="kw">func</span> (c *<span class="type">CarbonLedger</span>) <span class="fn">VerifyMeasure</span>(
+  ctx contractapi.TransactionContextInterface,
+  hashHex <span class="type">string</span>,
+) (*<span class="type">MeasureRecord</span>, <span class="type">error</span>) {
+
+  data, err := ctx.<span class="fn">GetStub</span>().<span class="fn">GetState</span>(hashHex)
+  <span class="kw">if</span> err != <span class="kw">nil</span> {
+    <span class="kw">return</span> <span class="kw">nil</span>, fmt.<span class="fn">Errorf</span>(<span class="str">"erreur ledger: %w"</span>, err)
+  }
+  <span class="kw">if</span> data == <span class="kw">nil</span> {
+    <span class="kw">return</span> <span class="kw">nil</span>, fmt.<span class="fn">Errorf</span>(<span class="str">"hash %s introuvable — données ALTÉRÉES ou inconnues"</span>, hashHex[:16])
+  }
+
+  <span class="kw">var</span> record <span class="type">MeasureRecord</span>
+  json.<span class="fn">Unmarshal</span>(data, &record)
+  <span class="kw">return</span> &record, <span class="kw">nil</span>
+}
+
+<span class="cmt">// GetMeasureHistory — retourne l'historique complet d'un device</span>
+<span class="kw">func</span> (c *<span class="type">CarbonLedger</span>) <span class="fn">GetDeviceHistory</span>(
+  ctx contractapi.TransactionContextInterface,
+  deviceID <span class="type">string</span>,
+) ([]*<span class="type">MeasureRecord</span>, <span class="type">error</span>) {
+
+  query := fmt.<span class="fn">Sprintf</span>(
+    <span class="str">\`{"selector":{"deviceID":"%s"},"sort":[{"timestamp":"asc"}]}\`</span>,
+    deviceID,
+  )
+  iterator, err := ctx.<span class="fn">GetStub</span>().<span class="fn">GetQueryResult</span>(query)
+  <span class="kw">if</span> err != <span class="kw">nil</span> { <span class="kw">return</span> <span class="kw">nil</span>, err }
+  <span class="kw">defer</span> iterator.<span class="fn">Close</span>()
+
+  <span class="kw">var</span> results []*<span class="type">MeasureRecord</span>
+  <span class="kw">for</span> iterator.<span class="fn">HasNext</span>() {
+    item, _ := iterator.<span class="fn">Next</span>()
+    <span class="kw">var</span> r <span class="type">MeasureRecord</span>
+    json.<span class="fn">Unmarshal</span>(item.Value, &r)
+    results = <span class="fn">append</span>(results, &r)
+  }
+  <span class="kw">return</span> results, <span class="kw">nil</span>
+}`,
+
+  types: `<span class="cmt">// types.go — Structures de données du chaincode</span>
+
+<span class="kw">package</span> <span class="pkg">main</span>
+
+<span class="cmt">// MeasureRecord — enregistrement immuable sur le ledger</span>
+<span class="kw">type</span> <span class="type">MeasureRecord</span> <span class="kw">struct</span> {
+  <span class="cmt">// Identité</span>
+  DeviceID   <span class="type">string</span>  <span class="str">\`json:"deviceID"\`</span>   <span class="cmt">// UUID de l'ESP32</span>
+  HashHex    <span class="type">string</span>  <span class="str">\`json:"hashHex"\`</span>    <span class="cmt">// SHA-256 du payload (clé du World State)</span>
+  Signature  <span class="type">string</span>  <span class="str">\`json:"signature"\`</span>  <span class="cmt">// Signature ECDSA (DER hex)</span>
+
+  <span class="cmt">// Mesures physiques</span>
+  Voltage    <span class="type">float64</span> <span class="str">\`json:"voltage"\`</span>    <span class="cmt">// Tension RMS (V)</span>
+  Current    <span class="type">float64</span> <span class="str">\`json:"current"\`</span>    <span class="cmt">// Courant RMS (A)</span>
+  Power      <span class="type">float64</span> <span class="str">\`json:"power"\`</span>      <span class="cmt">// Puissance active (W)</span>
+  Energy     <span class="type">float64</span> <span class="str">\`json:"energy"\`</span>     <span class="cmt">// Énergie cumulée (kWh)</span>
+
+  <span class="cmt">// Calcul CO₂</span>
+  Co2Value   <span class="type">float64</span> <span class="str">\`json:"co2Value"\`</span>   <span class="cmt">// Émissions CO₂ (kg)</span>
+  EmFactor   <span class="type">float64</span> <span class="str">\`json:"emFactor"\`</span>   <span class="cmt">// Facteur d'émission utilisé (kgCO₂/kWh)</span>
+  Country    <span class="type">string</span>  <span class="str">\`json:"country"\`</span>    <span class="cmt">// Pays (ex: "TN")</span>
+
+  <span class="cmt">// Horodatage</span>
+  Timestamp  <span class="type">string</span>  <span class="str">\`json:"timestamp"\`</span>  <span class="cmt">// ISO 8601 UTC (depuis ESP32)</span>
+  RecordedAt <span class="type">string</span>  <span class="str">\`json:"recordedAt"\`</span> <span class="cmt">// Timestamp Fabric (côté réseau)</span>
+
+  <span class="cmt">// Fabric metadata</span>
+  TxID       <span class="type">string</span>  <span class="str">\`json:"txID"\`</span>       <span class="cmt">// Transaction ID Hyperledger Fabric</span>
+  BlockNum   <span class="type">uint64</span>  <span class="str">\`json:"blockNum"\`</span>   <span class="cmt">// Numéro du bloc contenant cette TX</span>
+}
+
+<span class="cmt">// ValidationResult — résultat de vérification renvoyé au client</span>
+<span class="kw">type</span> <span class="type">ValidationResult</span> <span class="kw">struct</span> {
+  Verified    <span class="type">bool</span>          <span class="str">\`json:"verified"\`</span>
+  Record     *<span class="type">MeasureRecord</span> <span class="str">\`json:"record,omitempty"\`</span>
+  Message     <span class="type">string</span>        <span class="str">\`json:"message"\`</span>
+}`,
+
+  validate: `<span class="cmt">// validate.go — Fonctions de validation des entrées chaincode</span>
+
+<span class="kw">package</span> <span class="pkg">main</span>
+
+<span class="kw">import</span> (
+  <span class="str">"fmt"</span>
+  <span class="str">"regexp"</span>
+  <span class="str">"time"</span>
+)
+
+<span class="kw">var</span> (
+  hashRegex   = regexp.<span class="fn">MustCompile</span>(<span class="str">\`^[0-9a-f]{64}$\`</span>)
+  deviceRegex = regexp.<span class="fn">MustCompile</span>(<span class="str">\`^ESP32-CLedger-[0-9A-F]{8}$\`</span>)
+)
+
+<span class="kw">func</span> <span class="fn">validateInputs</span>(deviceID, hashHex, timestamp <span class="type">string</span>, co2 <span class="type">float64</span>) <span class="type">error</span> {
+
+  <span class="cmt">// Valider format deviceID</span>
+  <span class="kw">if</span> !deviceRegex.<span class="fn">MatchString</span>(deviceID) {
+    <span class="kw">return</span> fmt.<span class="fn">Errorf</span>(<span class="str">"deviceID invalide: %s"</span>, deviceID)
+  }
+
+  <span class="cmt">// Valider format hash SHA-256 (64 hex lowercase)</span>
+  <span class="kw">if</span> !hashRegex.<span class="fn">MatchString</span>(hashHex) {
+    <span class="kw">return</span> fmt.<span class="fn">Errorf</span>(<span class="str">"hash invalide (doit être SHA-256 hex 64 chars)"</span>)
+  }
+
+  <span class="cmt">// Valider timestamp ISO 8601 et cohérence temporelle</span>
+  ts, err := time.<span class="fn">Parse</span>(time.RFC3339, timestamp)
+  <span class="kw">if</span> err != <span class="kw">nil</span> {
+    <span class="kw">return</span> fmt.<span class="fn">Errorf</span>(<span class="str">"timestamp invalide (RFC3339 requis)"</span>)
+  }
+  <span class="kw">if</span> ts.<span class="fn">After</span>(time.<span class="fn">Now</span>().<span class="fn">Add</span>(30 * time.Second)) {
+    <span class="kw">return</span> fmt.<span class="fn">Errorf</span>(<span class="str">"timestamp dans le futur refusé"</span>)
+  }
+  <span class="kw">if</span> ts.<span class="fn">Before</span>(time.<span class="fn">Now</span>().<span class="fn">Add</span>(-24 * time.Hour)) {
+    <span class="kw">return</span> fmt.<span class="fn">Errorf</span>(<span class="str">"timestamp trop ancien (>24h)"</span>)
+  }
+
+  <span class="cmt">// Valider plage CO₂ (0 à 10 000 kg par mesure)</span>
+  <span class="kw">if</span> co2 < <span class="num">0</span> || co2 > <span class="num">10000</span> {
+    <span class="kw">return</span> fmt.<span class="fn">Errorf</span>(<span class="str">"co2Value hors plage: %.4f kg"</span>, co2)
+  }
+
+  <span class="kw">return</span> <span class="kw">nil</span>
+}`,
+
+  query: `<span class="cmt">// query.go — Fonctions de requête avancées (CouchDB queries)</span>
+
+<span class="kw">package</span> <span class="pkg">main</span>
+
+<span class="kw">import</span> (
+  <span class="str">"encoding/json"</span>
+  <span class="str">"fmt"</span>
+  <span class="str">"github.com/hyperledger/fabric-contract-api-go/contractapi"</span>
+)
+
+<span class="cmt">// GetCO2Summary — agrège le CO₂ total par device sur une période</span>
+<span class="kw">func</span> (c *<span class="type">CarbonLedger</span>) <span class="fn">GetCO2Summary</span>(
+  ctx contractapi.TransactionContextInterface,
+  deviceID, from, to <span class="type">string</span>,
+) (*<span class="type">CO2Summary</span>, <span class="type">error</span>) {
+
+  query := fmt.<span class="fn">Sprintf</span>(<span class="str">\`{
+    "selector": {
+      "deviceID": "%s",
+      "timestamp": { "$gte": "%s", "$lte": "%s" }
+    },
+    "fields": ["co2Value", "energy", "timestamp"]
+  }\`</span>, deviceID, from, to)
+
+  iterator, err := ctx.<span class="fn">GetStub</span>().<span class="fn">GetQueryResult</span>(query)
+  <span class="kw">if</span> err != <span class="kw">nil</span> { <span class="kw">return</span> <span class="kw">nil</span>, err }
+  <span class="kw">defer</span> iterator.<span class="fn">Close</span>()
+
+  summary := &<span class="type">CO2Summary</span>{DeviceID: deviceID, From: from, To: to}
+  <span class="kw">for</span> iterator.<span class="fn">HasNext</span>() {
+    item, _ := iterator.<span class="fn">Next</span>()
+    <span class="kw">var</span> r <span class="type">MeasureRecord</span>
+    json.<span class="fn">Unmarshal</span>(item.Value, &r)
+    summary.TotalCO2   += r.Co2Value
+    summary.TotalEnergy += r.Energy
+    summary.Count++
+  }
+  summary.AvgCO2 = summary.TotalCO2 / <span class="type">float64</span>(summary.Count)
+  <span class="kw">return</span> summary, <span class="kw">nil</span>
+}
+
+<span class="kw">type</span> <span class="type">CO2Summary</span> <span class="kw">struct</span> {
+  DeviceID    <span class="type">string</span>  <span class="str">\`json:"deviceID"\`</span>
+  From        <span class="type">string</span>  <span class="str">\`json:"from"\`</span>
+  To          <span class="type">string</span>  <span class="str">\`json:"to"\`</span>
+  TotalCO2    <span class="type">float64</span> <span class="str">\`json:"totalCO2"\`</span>
+  TotalEnergy <span class="type">float64</span> <span class="str">\`json:"totalEnergy"\`</span>
+  AvgCO2      <span class="type">float64</span> <span class="str">\`json:"avgCO2"\`</span>
+  Count       <span class="type">int</span>     <span class="str">\`json:"count"\`</span>
+}`,
+
+  main: `<span class="cmt">// main.go — Point d'entrée du chaincode</span>
+
+<span class="kw">package</span> <span class="pkg">main</span>
+
+<span class="kw">import</span> (
+  <span class="str">"fmt"</span>
+  <span class="str">"os"</span>
+  <span class="str">"github.com/hyperledger/fabric-contract-api-go/contractapi"</span>
+)
+
+<span class="kw">func</span> <span class="fn">main</span>() {
+  chaincode, err := contractapi.<span class="fn">NewChaincode</span>(&<span class="type">CarbonLedger</span>{})
+  <span class="kw">if</span> err != <span class="kw">nil</span> {
+    fmt.<span class="fn">Fprintf</span>(os.Stderr, <span class="str">"Erreur création chaincode: %v\n"</span>, err)
+    os.<span class="fn">Exit</span>(<span class="num">1</span>)
+  }
+
+  <span class="cmt">// Configurer les métadonnées</span>
+  chaincode.Info.Title       = <span class="str">"Carbon Ledger Chaincode"</span>
+  chaincode.Info.Version     = <span class="str">"1.0.0"</span>
+  chaincode.Info.Description = <span class="str">"Traçabilité immuable des émissions CO₂"</span>
+
+  <span class="kw">if</span> err = chaincode.<span class="fn">Start</span>(); err != <span class="kw">nil</span> {
+    fmt.<span class="fn">Fprintf</span>(os.Stderr, <span class="str">"Erreur démarrage chaincode: %v\n"</span>, err)
+    os.<span class="fn">Exit</span>(<span class="num">1</span>)
+  }
+}
+
+<span class="cmt">// go.mod</span>
+<span class="def">module</span> carbon-ledger-chaincode
+
+<span class="def">go</span> <span class="num">1.22</span>
+
+<span class="kw">require</span> (
+  github.com/hyperledger/fabric-contract-api-go <span class="str">v1.2.2</span>
+  github.com/hyperledger/fabric-chaincode-go     <span class="str">v0.0.0-20230731094759</span>
+  github.com/hyperledger/fabric-protos-go        <span class="str">v0.3.3</span>
+)`
+};
+
+function showCode(name) {
+  document.querySelectorAll('[id^="fb-"]').forEach(b => { b.className = 'btn'; });
+  document.getElementById('fb-' + name).className = 'btn btn-purple';
+  document.getElementById('code-display-cc').innerHTML = `<div class="code-block">${ccFiles[name]}</div>`;
+}
+
+// ── PIPELINE ANIMATION ────────────────────────────────────
+async function runPipelineAnimation() {
+  const nodes = ['fn-pzem','fn-esp','fn-mqtt','fn-worker','fn-fabric','fn-ledger','fn-api'];
+  const labels = ['Lecture PZEM...','ECDSA sign...','Publish MQTT...','Validate sig...','RecordMeasure()...','CouchDB write...','API notif...'];
+  const statEl = document.getElementById('pipeline-status');
+
+  // Reset
+  nodes.forEach(n => document.getElementById(n).classList.remove('active-node'));
+
+  for (let i = 0; i < nodes.length; i++) {
+    statEl.textContent = labels[i].toUpperCase();
+    document.getElementById(nodes[i]).classList.add('active-node');
+    await sleep(420);
+    if (i > 0) document.getElementById(nodes[i-1]).classList.remove('active-node');
+  }
+  await sleep(300);
+  document.getElementById(nodes[nodes.length-1]).classList.remove('active-node');
+  statEl.textContent = '✓ TRANSACTION COMMITÉE';
+
+  // Ajouter un bloc automatiquement
+  addBlockSilent();
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ── KPI UPDATES ───────────────────────────────────────────
+function updateKPIs() {
+  document.getElementById('kpi-blocks').textContent = blockCount;
+  document.getElementById('kpi-tx').textContent = txCount;
+  document.getElementById('kpi-tx-ok').textContent = txOk;
+  document.getElementById('kpi-tx-fail').textContent = txFail;
+  document.getElementById('kpi-co2').innerHTML = totalCo2.toFixed(3) + '<span class="metric-unit">kg</span>';
+  document.getElementById('block-count-hdr').textContent = blockCount + ' blocks';
+}
+
+// ── LEDGER / BLOCKS ───────────────────────────────────────
+function randHex(len) {
+  let s = '';
+  for (let i = 0; i < len; i++) s += '0123456789abcdef'[Math.floor(Math.random()*16)];
+  return s;
+}
+
+function makeTx() {
+  const co2 = +(Math.random() * 0.8 + 0.01).toFixed(4);
+  const hash = randHex(64);
+  registeredHashes.push(hash);
+  totalCo2 += co2;
+  txCount++; txOk++;
+  return { hash: hash, device: 'ESP32-CLedger-A3F7B291', co2: +(co2*1000).toFixed(1), ok: true };
+}
+
+function buildBlockEl(block, idx) {
+  const el = document.createElement('div');
+  const isGenesis = idx === 0;
+  const isLatest = idx === blocks.length - 1 && blocks.length > 0;
+  el.className = 'block-node' + (isGenesis ? ' genesis' : '') + (isLatest ? ' latest' : '');
+  el.onclick = () => selectBlock(idx);
+  el.innerHTML = `
+    <div class="block-num">${isGenesis ? '🌱 GENESIS' : isLatest ? '🔴 LATEST' : '⬛'} BLOCK #${block.num}</div>
+    <div style="font-family:var(--mono);font-size:8px;color:var(--text3);margin-bottom:4px">HASH</div>
+    <div class="block-hash">${block.hash.substring(0,32)}<br>${block.hash.substring(32)}</div>
+    <div style="font-family:var(--mono);font-size:8px;color:var(--text3);margin-top:4px;margin-bottom:2px">PREV</div>
+    <div class="block-prev">${block.prev.substring(0,32)}...</div>
+    <div class="block-meta">
+      <span class="block-tag" style="background:rgba(157,111,255,0.1);color:var(--purple);border:1px solid var(--purple3)">${block.txs.length} TX</span>
+      <span class="block-tag" style="background:rgba(0,212,200,0.08);color:var(--teal);border:1px solid var(--teal2)">${block.txs.reduce((s,t)=>s+t.co2,0).toFixed(1)}g CO₂</span>
+    </div>
+  `;
+  return el;
+}
+
+function renderChain() {
+  const container = document.getElementById('chain-container');
+  container.innerHTML = '';
+  blocks.forEach((block, i) => {
+    container.appendChild(buildBlockEl(block, i));
+    if (i < blocks.length - 1) {
+      const arr = document.createElement('div');
+      arr.className = 'chain-arrow';
+      arr.textContent = '←';
+      container.appendChild(arr);
+    }
+  });
+  updateHashList();
+  updateKPIs();
+}
+
+function selectBlock(idx) {
+  const block = blocks[idx];
+  const detail = document.getElementById('block-detail');
+  detail.innerHTML = `
+    <div style="color:var(--text3)">Block #</div><div style="color:var(--purple)">${block.num}</div>
+    <div style="color:var(--text3);margin-top:4px">Hash</div><div class="hash-display" style="margin-top:4px">${block.hash}</div>
+    <div style="color:var(--text3);margin-top:8px">Prev Hash</div><div class="hash-display" style="margin-top:4px">${block.prev}</div>
+    <div style="color:var(--text3);margin-top:8px">Timestamp</div><div style="color:var(--amber)">${block.ts}</div>
+    <div style="color:var(--text3);margin-top:4px">TX Count</div><div style="color:var(--teal)">${block.txs.length}</div>
+    <div style="color:var(--text3);margin-top:4px">Data Hash</div><div class="hash-display" style="margin-top:4px">${randHex(64)}</div>
+  `;
+  const tbody = document.getElementById('tx-rows');
+  tbody.innerHTML = block.txs.map(tx => `
+    <tr>
+      <td class="tx-hash">${tx.hash.substring(0,20)}...</td>
+      <td class="tx-device">${tx.device.substring(0,22)}</td>
+      <td class="tx-co2">${tx.co2}g</td>
+      <td class="${tx.ok?'tx-ok':'tx-fail'}">${tx.ok?'✓ VALID':'✗ REJECTED'}</td>
+    </tr>
+  `).join('');
+}
+
+function addBlockSilent() {
+  const prev = blocks.length > 0 ? blocks[blocks.length-1].hash : '0'.repeat(64);
+  const txs = [];
+  const numTx = Math.floor(Math.random()*3)+1;
+  for (let i=0;i<numTx;i++) txs.push(makeTx());
+  const block = { num: blockCount, hash: randHex(64), prev: prev, ts: new Date().toISOString(), txs };
+  blocks.push(block);
+  blockCount++;
+  renderChain();
+}
+
+function addBlock() {
+  addBlockSilent();
+  logVerify(`[${ts()}] <span class="con-ok">✓ Nouveau bloc #${blockCount-1} committé</span>`);
+}
+
+function resetLedger() {
+  blocks = []; blockCount = 0; txCount = 0; txOk = 0; txFail = 0;
+  totalCo2 = 0; registeredHashes = [];
+  document.getElementById('chain-container').innerHTML = '';
+  document.getElementById('block-detail').innerHTML = '<span style="color:var(--text3)">← Cliquez sur un bloc</span>';
+  document.getElementById('tx-rows').innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:20px">Sélectionnez un bloc</td></tr>';
+  updateKPIs();
+  updateHashList();
+  // Add genesis
+  addBlock();
+}
+
+// ── VERIFY ────────────────────────────────────────────────
+function ts() {
+  const d = new Date();
+  return [d.getHours(),d.getMinutes(),d.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':');
+}
+
+function logVerify(html) {
+  const el = document.getElementById('verify-console');
+  el.innerHTML += '\n' + html;
+  el.scrollTop = el.scrollHeight;
+}
+
+function loadSampleHash() {
+  if (registeredHashes.length > 0) {
+    document.getElementById('verify-input').value = registeredHashes[registeredHashes.length-1];
+  } else {
+    document.getElementById('verify-input').value = 'a3f7b291d4e5c6f8a9b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4';
+  }
+}
+
+async function verifyHash() {
+  const hash = document.getElementById('verify-input').value.trim();
+  const result = document.getElementById('verify-result');
+
+  if (hash.length !== 64 || !/^[0-9a-f]+$/.test(hash)) {
+    result.style.display = 'block';
+    result.className = 'verify-result fail';
+    result.innerHTML = '<span style="color:var(--red)">✗ ERREUR</span> Hash invalide (SHA-256 hex 64 chars requis)';
+    return;
+  }
+
+  result.style.display = 'block';
+  result.className = 'verify-result pending';
+  result.innerHTML = '<span style="color:var(--purple)">⟳</span> Interrogation du ledger Hyperledger Fabric...';
+  logVerify(`[${ts()}] <span class="con-tx">→ VerifyMeasure(${hash.substring(0,16)}...)</span>`);
+
+  await sleep(900 + Math.random()*600);
+
+  const found = registeredHashes.includes(hash);
+  if (found) {
+    const co2 = (Math.random()*0.5+0.05).toFixed(4);
+    const blockNum = Math.floor(Math.random()*(blockCount||1));
+    result.className = 'verify-result ok';
+    result.innerHTML = `<span style="color:var(--green)">✓ VÉRIFIÉ — Donnée authentique et intègre</span>
+
+<span style="color:var(--text3)">DeviceID:</span>   <span style="color:var(--amber)">ESP32-CLedger-A3F7B291</span>
+<span style="color:var(--text3)">Hash:</span>       <span style="color:var(--purple)">${hash.substring(0,32)}</span>
+<span style="color:var(--text3)">            </span><span style="color:var(--purple)">${hash.substring(32)}</span>
+<span style="color:var(--text3)">CO₂:</span>        <span style="color:var(--teal)">${co2} kg</span>
+<span style="color:var(--text3)">Bloc #:</span>     <span style="color:var(--blue)">${blockNum}</span>
+<span style="color:var(--text3)">Timestamp:</span>  <span style="color:var(--text2)">${new Date().toISOString()}</span>
+<span style="color:var(--text3)">TxID:</span>       <span style="color:var(--purple)">${randHex(64)}</span>`;
+    logVerify(`[${ts()}] <span class="con-ok">✓ Hash trouvé dans le ledger → AUTHENTIQUE</span>`);
+  } else {
+    result.className = 'verify-result fail';
+    result.innerHTML = `<span style="color:var(--red)">✗ NON TROUVÉ — Hash absent du ledger Fabric</span>
+
+Ce hash n'a jamais été enregistré sur la blockchain.
+Les données peuvent être <span style="color:var(--red)">ALTÉRÉES</span>, <span style="color:var(--red)">FORGÉES</span>, ou simplement inconnues.
+Contactez l'administrateur du système pour investigation.`;
+    logVerify(`[${ts()}] <span class="con-err">✗ Hash introuvable → DONNÉES SUSPECTES</span>`);
+  }
+}
+
+function updateHashList() {
+  const el = document.getElementById('hash-list');
+  if (registeredHashes.length === 0) {
+    el.innerHTML = '<div style="padding:16px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--text3)">Aucun hash enregistré</div>';
+    return;
+  }
+  el.innerHTML = registeredHashes.slice().reverse().slice(0,10).map((h,i) => `
+    <div style="padding:8px 12px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.15s"
+         onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''"
+         onclick="document.getElementById('verify-input').value='${h}'">
+      <div style="font-family:var(--mono);font-size:9px;color:var(--text3)">TX #${registeredHashes.length-i}</div>
+      <div class="hash-display" style="margin-top:2px;font-size:9px">${h.substring(0,40)}...</div>
+    </div>
+  `).join('');
+}
+
+// ── TESTS ─────────────────────────────────────────────────
+async function runIntegrityTests() {
+  const cons = document.getElementById('test-console');
+  const scenarios = ['ts-1','ts-2','ts-3','ts-4'];
+  const msgs = [
+    ['Tentative modification TX commitée...', '✓ Rejetée par consensus Raft (immutabilité)', true],
+    ['Rejeu du hash déjà enregistré...', '✓ Doublon détecté par chaincode (unicité)', true],
+    ['Envoi signature ECDSA falsifiée...', '✓ Rejetée par worker Python (sig invalide)', true],
+    ['Injection mesure sans clé ESP32...', '✓ Impossible — pas de clé privée disponible', true],
+  ];
+
+  let passed = 0;
+  document.getElementById('test-integrity').textContent = '--';
+  cons.innerHTML = `<span class="con-ts">[${ts()}]</span> <span class="con-data">▶ Démarrage suite de tests d'intégrité...</span>`;
+
+  for (let i=0; i<4; i++) {
+    document.getElementById(scenarios[i]).className = 'step-item active';
+    await sleep(200);
+    cons.innerHTML += `\n<span class="con-ts">[${ts()}]</span> <span class="con-warn">⚡ ${msgs[i][0]}</span>`;
+    cons.scrollTop = cons.scrollHeight;
+    await sleep(900 + Math.random()*600);
+    cons.innerHTML += `\n<span class="con-ts">[${ts()}]</span> <span class="con-ok">${msgs[i][1]}</span>`;
+    document.getElementById(scenarios[i]).className = 'step-item done';
+    document.getElementById(scenarios[i]).querySelector('.step-icon').textContent = '✅';
+    if (msgs[i][2]) passed++;
+    document.getElementById('test-integrity').textContent = passed + '/4';
+    cons.scrollTop = cons.scrollHeight;
+    await sleep(300);
+  }
+  cons.innerHTML += `\n<span class="con-ts">[${ts()}]</span> <span class="con-ok">═══ TOUS LES TESTS PASSÉS (${passed}/4) ═══</span>`;
+  cons.scrollTop = cons.scrollHeight;
+}
+
+async function runTpsTest() {
+  const btn = document.getElementById('tps-btn');
+  const display = document.getElementById('tps-live');
+  btn.disabled = true;
+  btn.textContent = '⟳ Test en cours...';
+  display.textContent = '...';
+  display.style.color = 'var(--amber)';
+
+  const cons = document.getElementById('test-console');
+  cons.innerHTML = `<span class="con-ts">[${ts()}]</span> <span class="con-data">▶ Benchmark TPS — envoi de 500 transactions...</span>`;
+
+  // Simulate TPS climbing
+  const target = 2800 + Math.floor(Math.random()*400);
+  let current = 0;
+  const steps = 20;
+  for (let i=0;i<steps;i++) {
+    current = Math.floor(target * (i+1)/steps * (0.9+Math.random()*0.2));
+    display.textContent = current;
+    document.getElementById('tps-hdr').textContent = current + ' TPS';
+    await sleep(100);
+  }
+  display.textContent = target;
+  display.style.color = 'var(--purple)';
+  document.getElementById('tps-hdr').textContent = target + ' TPS';
+  cons.innerHTML += `\n<span class="con-ts">[${ts()}]</span> <span class="con-ok">✓ TPS mesuré: ${target} tx/s</span>`;
+  cons.innerHTML += `\n<span class="con-ts">[${ts()}]</span> <span class="con-data">Latence P50: ${270+Math.floor(Math.random()*30)}ms | P99: ${420+Math.floor(Math.random()*40)}ms</span>`;
+  cons.scrollTop = cons.scrollHeight;
+
+  btn.disabled = false;
+  btn.textContent = '▶ Lancer test TPS';
+  drawTpsChart(target);
+}
+
+// ── TPS CHART ─────────────────────────────────────────────
+function drawTpsChart(fabricTps) {
+  const canvas = document.getElementById('tpsCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+  canvas.height = 120 * window.devicePixelRatio;
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  const W = canvas.offsetWidth, H = 120;
+
+  const data = [
+    { name: 'Ethereum (pub)', tps: 25, color: '#6272a4' },
+    { name: 'Ganache (local)', tps: 500, color: '#8be9fd' },
+    { name: 'H.Fabric v2.5', tps: fabricTps, color: '#9d6fff' },
+    { name: 'Fabric (théo.)', tps: 3500, color: '#6b4bbf' },
+  ];
+  const maxTps = 4000;
+  const barW = (W - 80) / data.length;
+  ctx.fillStyle = '#0f1416';
+  ctx.fillRect(0,0,W,H);
+
+  data.forEach((d,i) => {
+    const x = 40 + i*barW + barW*0.15;
+    const w = barW*0.7;
+    const h = (d.tps/maxTps)*(H-40);
+    const y = H-20-h;
+    ctx.fillStyle = d.color + '33';
+    ctx.strokeStyle = d.color;
+    ctx.lineWidth = 1;
+    ctx.fillRect(x,y,w,h);
+    ctx.strokeRect(x,y,w,h);
+    ctx.fillStyle = d.color;
+    ctx.font = '9px JetBrains Mono';
+    ctx.textAlign = 'center';
+    ctx.fillText(d.tps + ' TPS', x+w/2, y-4);
+    ctx.fillStyle = '#3d5560';
+    ctx.font = '8px JetBrains Mono';
+    ctx.fillText(d.name, x+w/2, H-6);
+  });
+}
+
+// ── INIT ──────────────────────────────────────────────────
+showCode('carbonledger');
+resetLedger();
+drawTpsChart(0);
+
+// Auto-tick KPIs
+setInterval(() => {
+  const elapsed = Math.floor((Date.now()-startTime)/1000);
+  const h = String(Math.floor(elapsed/3600)).padStart(2,'0');
+  const m = String(Math.floor((elapsed%3600)/60)).padStart(2,'0');
+  const s = String(elapsed%60).padStart(2,'0');
+}, 1000);
+
+window.addEventListener('resize', () => drawTpsChart(0));
+</script>
+</body>
+</html>

@@ -1,0 +1,1860 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carbon Ledger — Hardware Prototype</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg: #0a0d0f;
+  --bg2: #0f1416;
+  --bg3: #141c1f;
+  --bg4: #1a2428;
+  --border: #1f2d32;
+  --border2: #243438;
+  --green: #00e896;
+  --green2: #00b872;
+  --green3: #004d30;
+  --amber: #ffb347;
+  --amber2: #cc8a2a;
+  --red: #ff4757;
+  --blue: #00b4ff;
+  --blue2: #0088cc;
+  --purple: #9d6fff;
+  --text: #c8d8dc;
+  --text2: #7a9aa0;
+  --text3: #3d5560;
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'Space Grotesk', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── SCANLINE OVERLAY ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+  pointer-events: none; z-index: 999;
+}
+
+/* ── HEADER ── */
+.header {
+  display: flex; align-items: center; gap: 16px;
+  padding: 14px 24px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 100;
+}
+.header-logo {
+  display: flex; align-items: center; gap: 10px;
+}
+.logo-icon {
+  width: 32px; height: 32px;
+  background: var(--green3);
+  border: 1px solid var(--green2);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+}
+.logo-text {
+  font-family: var(--mono);
+  font-size: 13px; font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--green);
+}
+.logo-sub {
+  font-family: var(--mono);
+  font-size: 9px; color: var(--text3);
+  letter-spacing: 0.2em; text-transform: uppercase;
+  display: block; margin-top: 1px;
+}
+.header-status {
+  margin-left: auto;
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--mono); font-size: 11px; color: var(--text2);
+}
+.status-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%,100% { opacity: 1; box-shadow: 0 0 8px var(--green); }
+  50% { opacity: 0.5; box-shadow: 0 0 3px var(--green); }
+}
+
+/* ── TABS ── */
+.tab-bar {
+  display: flex; gap: 0;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  overflow-x: auto;
+}
+.tab {
+  padding: 10px 20px;
+  font-family: var(--mono); font-size: 11px; font-weight: 500;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text3);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: all 0.2s;
+  user-select: none;
+}
+.tab:hover { color: var(--text2); }
+.tab.active { color: var(--green); border-bottom-color: var(--green); }
+
+/* ── PANELS ── */
+.panel { display: none; padding: 24px; }
+.panel.active { display: block; }
+
+/* ── GRID LAYOUTS ── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+@media (max-width: 900px) {
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+}
+
+/* ── CARD ── */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.card-header {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg3);
+}
+.card-title {
+  font-family: var(--mono); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.15em; text-transform: uppercase; color: var(--text2);
+}
+.card-dot { width: 6px; height: 6px; border-radius: 50%; }
+.card-body { padding: 16px; }
+
+/* ── METRIC DISPLAY ── */
+.metric-big {
+  font-family: var(--mono); font-size: 36px; font-weight: 700;
+  letter-spacing: -0.02em; line-height: 1;
+}
+.metric-unit {
+  font-family: var(--mono); font-size: 13px; color: var(--text2);
+  margin-left: 4px;
+}
+.metric-label {
+  font-size: 11px; color: var(--text3); margin-top: 4px;
+  letter-spacing: 0.08em; text-transform: uppercase;
+}
+.metric-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-family: var(--mono); font-size: 10px;
+  padding: 3px 8px; border-radius: 3px;
+  margin-top: 8px;
+}
+
+/* ── GAUGE ── */
+.gauge-wrap { position: relative; display: flex; justify-content: center; }
+.gauge-label {
+  position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+  font-family: var(--mono); font-size: 10px; color: var(--text3);
+  letter-spacing: 0.1em; white-space: nowrap;
+}
+
+/* ── CANVAS CHART ── */
+canvas { width: 100% !important; }
+
+/* ── WIRING DIAGRAM ── */
+.wiring-container {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  position: relative;
+  overflow-x: auto;
+}
+
+/* ── COMPONENT CHIP ── */
+.chip {
+  display: inline-flex; flex-direction: column;
+  align-items: center;
+  font-family: var(--mono); font-size: 9px;
+  color: var(--text2);
+  gap: 2px;
+}
+.chip-body {
+  background: var(--bg4);
+  border-radius: 4px;
+  padding: 6px 10px;
+  text-align: center;
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+/* ── CODE BLOCK ── */
+.code-block {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-x: auto;
+  white-space: pre;
+  color: var(--text);
+}
+.code-block .kw { color: #c792ea; }
+.code-block .fn { color: #82aaff; }
+.code-block .str { color: #c3e88d; }
+.code-block .num { color: var(--amber); }
+.code-block .cmt { color: var(--text3); font-style: italic; }
+.code-block .type { color: #ffcb6b; }
+.code-block .def { color: var(--green); }
+.code-block .macro { color: #f07178; }
+
+/* ── SERIAL CONSOLE ── */
+.console {
+  background: #050808;
+  border: 1px solid var(--green3);
+  border-radius: 6px;
+  padding: 12px;
+  font-family: var(--mono); font-size: 11px;
+  line-height: 1.8;
+  height: 300px;
+  overflow-y: auto;
+  color: #00e896cc;
+}
+.console .con-ts { color: var(--text3); }
+.console .con-warn { color: var(--amber); }
+.console .con-err { color: var(--red); }
+.console .con-ok { color: var(--green); }
+.console .con-data { color: var(--blue); }
+.console .con-hash { color: var(--purple); }
+
+/* ── WIRE SVG ── */
+.wire-svg { width: 100%; overflow: visible; }
+
+/* ── MQTT LOG ── */
+.mqtt-log {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  height: 220px; overflow-y: auto;
+  padding: 10px;
+  font-family: var(--mono); font-size: 11px;
+  line-height: 1.9;
+}
+.mqtt-entry { display: flex; gap: 12px; align-items: flex-start; }
+.mqtt-topic { color: var(--blue); }
+.mqtt-payload { color: var(--text2); word-break: break-all; }
+.mqtt-ts { color: var(--text3); flex-shrink: 0; }
+
+/* ── BUTTON ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid var(--border2);
+  border-radius: 5px;
+  font-family: var(--mono); font-size: 11px;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.05em;
+}
+.btn:hover { border-color: var(--green2); color: var(--green); background: rgba(0,184,114,0.06); }
+.btn-green {
+  background: var(--green3);
+  border-color: var(--green2);
+  color: var(--green);
+}
+.btn-green:hover { background: rgba(0,184,114,0.2); }
+.btn-red {
+  border-color: #4d1515;
+  color: var(--red);
+}
+.btn-red:hover { background: rgba(255,71,87,0.08); border-color: var(--red); }
+
+/* ── SLIDER ── */
+.slider-wrap { display: flex; align-items: center; gap: 10px; }
+.slider-label { font-family: var(--mono); font-size: 10px; color: var(--text3); min-width: 80px; letter-spacing: 0.08em; }
+.slider-val { font-family: var(--mono); font-size: 11px; color: var(--amber); min-width: 50px; text-align: right; }
+input[type=range] {
+  flex: 1; height: 3px;
+  -webkit-appearance: none;
+  background: var(--border2);
+  border-radius: 2px;
+  outline: none;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--amber);
+  cursor: pointer;
+  box-shadow: 0 0 6px var(--amber2);
+}
+
+/* ── TOGGLE ── */
+.toggle-row { display: flex; align-items: center; gap: 10px; }
+.toggle {
+  position: relative; width: 36px; height: 20px;
+  cursor: pointer;
+}
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-track {
+  position: absolute; inset: 0;
+  background: var(--border2);
+  border-radius: 10px;
+  transition: 0.2s;
+  border: 1px solid var(--border);
+}
+.toggle input:checked + .toggle-track {
+  background: var(--green3);
+  border-color: var(--green2);
+}
+.toggle-thumb {
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--text3);
+  transition: 0.2s;
+}
+.toggle input:checked ~ .toggle-thumb {
+  transform: translateX(16px);
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+}
+.toggle-label { font-family: var(--mono); font-size: 11px; color: var(--text2); }
+
+/* ── PINOUT TABLE ── */
+.pin-table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 11px; }
+.pin-table th { padding: 8px 12px; text-align: left; color: var(--text3); font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; font-size: 10px; border-bottom: 1px solid var(--border); }
+.pin-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text2); }
+.pin-table tr:last-child td { border-bottom: none; }
+.pin-num { color: var(--amber); font-weight: 700; }
+.pin-fn { color: var(--blue); }
+.pin-sig { color: var(--green); }
+.pin-gnd { color: var(--red); }
+.pin-pwr { color: var(--amber); }
+
+/* ── HASH DISPLAY ── */
+.hash-display {
+  font-family: var(--mono); font-size: 10px;
+  color: var(--purple);
+  background: rgba(157,111,255,0.06);
+  border: 1px solid rgba(157,111,255,0.2);
+  border-radius: 4px;
+  padding: 8px 10px;
+  word-break: break-all;
+  line-height: 1.6;
+  letter-spacing: 0.04em;
+}
+
+/* ── SECTION TITLE ── */
+.section-title {
+  font-family: var(--mono); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--text3); margin-bottom: 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-title::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+
+/* ── PROGRESS ── */
+.progress-bar-outer {
+  height: 4px; background: var(--border);
+  border-radius: 2px; overflow: hidden;
+}
+.progress-bar-inner {
+  height: 100%; border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+/* ── STEP LIST ── */
+.step-list { display: flex; flex-direction: column; gap: 8px; }
+.step-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-size: 12px; color: var(--text2);
+}
+.step-item.done { border-color: var(--green3); }
+.step-item.done .step-icon { color: var(--green); }
+.step-item.active { border-color: var(--amber2); background: rgba(255,179,71,0.04); }
+.step-item.active .step-icon { color: var(--amber); animation: pulse-dot 1s infinite; }
+.step-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+.step-text strong { color: var(--text); font-weight: 500; display: block; margin-bottom: 2px; }
+
+/* ── ANIMATIONS ── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.panel.active { animation: fadeInUp 0.25s ease; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">
+    <div class="logo-icon">🌿</div>
+    <div>
+      <div class="logo-text">CARBON LEDGER</div>
+      <span class="logo-sub">Hardware Dev Suite v1.0</span>
+    </div>
+  </div>
+  <div class="header-status">
+    <div class="status-dot"></div>
+    <span>ESP32 ONLINE</span>
+    &nbsp;·&nbsp;
+    <span id="uptime-display">00:00:00</span>
+    &nbsp;·&nbsp;
+    <span id="packet-count">0 pkt/s</span>
+  </div>
+</div>
+
+<div class="tab-bar">
+  <div class="tab active" onclick="switchTab('live')">📡 Live Monitor</div>
+  <div class="tab" onclick="switchTab('wiring')">🔌 Schéma de Câblage</div>
+  <div class="tab" onclick="switchTab('firmware')">💾 Firmware C++</div>
+  <div class="tab" onclick="switchTab('serial')">📟 Console Série</div>
+  <div class="tab" onclick="switchTab('crypto')">🔐 Crypto & Signature</div>
+  <div class="tab" onclick="switchTab('mqtt')">📨 MQTT Publisher</div>
+</div>
+
+<!-- ═══════════════ TAB 1 : LIVE MONITOR ═══════════════ -->
+<div class="panel active" id="panel-live">
+
+  <!-- Controls -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header">
+      <div class="card-dot" style="background:var(--amber)"></div>
+      <div class="card-title">Simulation Controls</div>
+      <div style="margin-left:auto;display:flex;gap:10px">
+        <button class="btn btn-green" onclick="toggleSim()" id="sim-btn">⏸ PAUSE</button>
+        <button class="btn" onclick="resetSim()">↺ RESET</button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+        <div>
+          <div class="slider-wrap">
+            <span class="slider-label">CHARGE (W)</span>
+            <input type="range" min="50" max="3000" value="850" id="sl-power" oninput="updateSliders()">
+            <span class="slider-val" id="sv-power">850 W</span>
+          </div>
+          <div class="slider-wrap" style="margin-top:10px">
+            <span class="slider-label">BRUIT (%)</span>
+            <input type="range" min="0" max="10" value="3" id="sl-noise" oninput="updateSliders()">
+            <span class="slider-val" id="sv-noise">3 %</span>
+          </div>
+        </div>
+        <div>
+          <div class="toggle-row" style="margin-bottom:10px">
+            <label class="toggle">
+              <input type="checkbox" id="tg-rectifier" onchange="updateSliders()">
+              <div class="toggle-track"></div><div class="toggle-thumb"></div>
+            </label>
+            <span class="toggle-label">Charge non-linéaire (harmoniques)</span>
+          </div>
+          <div class="toggle-row">
+            <label class="toggle">
+              <input type="checkbox" id="tg-spike" onchange="updateSliders()">
+              <div class="toggle-track"></div><div class="toggle-thumb"></div>
+            </label>
+            <span class="toggle-label">Pics de démarrage moteur</span>
+          </div>
+        </div>
+        <div>
+          <div class="slider-wrap">
+            <span class="slider-label">FE CO₂ (kg/kWh)</span>
+            <input type="range" min="300" max="900" value="553" id="sl-fe" oninput="updateSliders()">
+            <span class="slider-val" id="sv-fe">0.553</span>
+          </div>
+          <div class="slider-wrap" style="margin-top:10px">
+            <span class="slider-label">INTERVALLE (s)</span>
+            <input type="range" min="1" max="30" value="5" id="sl-interval" oninput="updateSliders()">
+            <span class="slider-val" id="sv-interval">5 s</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Metric cards -->
+  <div class="grid-4" style="margin-bottom:16px">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-dot" style="background:var(--amber)"></div>
+        <div class="card-title">Tension</div>
+      </div>
+      <div class="card-body">
+        <div class="metric-big" style="color:var(--amber)" id="m-v">230.0<span class="metric-unit">V</span></div>
+        <div class="metric-label">RMS Réseau</div>
+        <div class="metric-badge" style="background:rgba(255,179,71,0.1);color:var(--amber);border:1px solid var(--amber2)">
+          <span>±</span><span id="m-v-noise">0.3</span><span>V</span>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-dot" style="background:var(--blue)"></div>
+        <div class="card-title">Courant</div>
+      </div>
+      <div class="card-body">
+        <div class="metric-big" style="color:var(--blue)" id="m-i">3.70<span class="metric-unit">A</span></div>
+        <div class="metric-label">RMS efficace</div>
+        <div class="metric-badge" style="background:rgba(0,180,255,0.08);color:var(--blue);border:1px solid var(--blue2)">
+          FP = <span id="m-pf">0.95</span>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-dot" style="background:var(--red)"></div>
+        <div class="card-title">Puissance</div>
+      </div>
+      <div class="card-body">
+        <div class="metric-big" style="color:var(--red)" id="m-p">850<span class="metric-unit">W</span></div>
+        <div class="metric-label">Active instantanée</div>
+        <div class="metric-badge" style="background:rgba(255,71,87,0.08);color:var(--red);border:1px solid #4d1515">
+          <span id="m-energy">0.000</span><span> kWh</span>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-dot" style="background:var(--green)"></div>
+        <div class="card-title">Émissions CO₂</div>
+      </div>
+      <div class="card-body">
+        <div class="metric-big" style="color:var(--green)" id="m-co2">0.000<span class="metric-unit">g</span></div>
+        <div class="metric-label">Session courante</div>
+        <div class="metric-badge" style="background:rgba(0,232,150,0.08);color:var(--green);border:1px solid var(--green3)">
+          <span id="m-co2-rate">0.00</span><span> gCO₂/min</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="grid-2" style="margin-bottom:16px">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-dot" style="background:var(--amber)"></div>
+        <div class="card-title">Forme d'onde V/I — Temps réel</div>
+        <span style="margin-left:auto;font-family:var(--mono);font-size:9px;color:var(--text3)">50 Hz · ADC 12-bit</span>
+      </div>
+      <div class="card-body" style="padding:8px">
+        <canvas id="waveCanvas" height="180"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-dot" style="background:var(--green)"></div>
+        <div class="card-title">Émissions CO₂ — Historique</div>
+        <span style="margin-left:auto;font-family:var(--mono);font-size:9px;color:var(--text3)">Session active</span>
+      </div>
+      <div class="card-body" style="padding:8px">
+        <canvas id="co2Canvas" height="180"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Power bars -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-dot" style="background:var(--purple)"></div>
+      <div class="card-title">Analyse spectrale — Harmoniques</div>
+    </div>
+    <div class="card-body">
+      <canvas id="fftCanvas" height="100"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ TAB 2 : WIRING ═══════════════ -->
+<div class="panel" id="panel-wiring">
+  <div class="section-title">Schéma de câblage complet</div>
+
+  <div class="wiring-container" style="margin-bottom:16px">
+    <svg class="wire-svg" viewBox="0 0 900 480" style="height:480px">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+          <path d="M2 2L8 5L2 8" fill="none" stroke-width="1.5" stroke-linecap="round" stroke="context-stroke"/>
+        </marker>
+        <filter id="glow-green">
+          <feGaussianBlur stdDeviation="2" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+
+      <!-- ── SECTEUR 220V ── -->
+      <g>
+        <rect x="20" y="120" width="90" height="140" rx="6" fill="#1a0f0f" stroke="#4d1515" stroke-width="1.5"/>
+        <text x="65" y="143" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#ff4757" letter-spacing="1">SECTEUR</text>
+        <text x="65" y="158" text-anchor="middle" font-family="JetBrains Mono" font-size="10" font-weight="700" fill="#ff4757">220V AC</text>
+        <text x="65" y="185" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#7a9aa0">L (Phase)</text>
+        <circle cx="65" cy="197" r="4" fill="none" stroke="#ff4757" stroke-width="1.5"/>
+        <text x="65" y="218" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#7a9aa0">N (Neutre)</text>
+        <circle cx="65" cy="230" r="4" fill="none" stroke="#3d5560" stroke-width="1.5"/>
+        <text x="65" y="248" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#7a9aa0">PE (Terre)</text>
+        <circle cx="65" cy="257" r="4" fill="none" stroke="#27ae60" stroke-width="1.5"/>
+      </g>
+
+      <!-- ── PZEM-004T ── -->
+      <g>
+        <rect x="170" y="80" width="150" height="220" rx="6" fill="#0f1a14" stroke="#00b872" stroke-width="1.5" filter="url(#glow-green)"/>
+        <text x="245" y="103" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#00e896" letter-spacing="2">PZEM-004T</text>
+        <text x="245" y="118" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#3d5560">Current/Voltage Sensor</text>
+        <!-- AC terminals -->
+        <rect x="182" y="128" width="55" height="22" rx="3" fill="#1a2428" stroke="#4d1515" stroke-width="1"/>
+        <text x="209" y="143" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#ff4757">AC IN</text>
+        <rect x="183" y="155" width="55" height="22" rx="3" fill="#1a2428" stroke="#4d1515" stroke-width="1"/>
+        <text x="210" y="170" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#ff4757">AC OUT</text>
+        <!-- CT clamp -->
+        <rect x="248" y="128" width="60" height="22" rx="3" fill="#1a2428" stroke="#00b872" stroke-width="1"/>
+        <text x="278" y="143" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#00e896">CT CLAMP</text>
+        <!-- UART pins -->
+        <rect x="182" y="195" width="126" height="85" rx="3" fill="#141c1f" stroke="#243438" stroke-width="1"/>
+        <text x="245" y="212" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#7a9aa0">UART Interface</text>
+        <text x="195" y="230" font-family="JetBrains Mono" font-size="9" fill="#ffb347">5V  ●</text>
+        <text x="195" y="247" font-family="JetBrains Mono" font-size="9" fill="#ff4757">GND ●</text>
+        <text x="195" y="264" font-family="JetBrains Mono" font-size="9" fill="#00b4ff">RX  ●</text>
+        <text x="195" y="271" font-family="JetBrains Mono" font-size="8" fill="#3d5560">  (TX de ESP32)</text>
+        <text x="195" y="281" font-family="JetBrains Mono" font-size="9" fill="#82aaff">TX  ●</text>
+        <text x="195" y="288" font-family="JetBrains Mono" font-size="8" fill="#3d5560">  (RX de ESP32)</text>
+      </g>
+
+      <!-- ── Résistance diviseur ── -->
+      <g>
+        <rect x="360" y="200" width="80" height="44" rx="4" fill="#1a1a0f" stroke="#cc8a2a" stroke-width="1"/>
+        <text x="400" y="218" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#ffb347">DIVISEUR</text>
+        <text x="400" y="233" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#ffb347">5V → 3.3V</text>
+        <text x="400" y="248" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#3d5560">R1=1kΩ R2=2kΩ</text>
+      </g>
+
+      <!-- ── ESP32 ── -->
+      <g>
+        <rect x="490" y="50" width="190" height="350" rx="8" fill="#0d1520" stroke="#185fa5" stroke-width="2"/>
+        <text x="585" y="78" text-anchor="middle" font-family="JetBrains Mono" font-size="11" font-weight="700" fill="#00b4ff" letter-spacing="2">ESP32</text>
+        <text x="585" y="93" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#3d5560">Xtensa LX6 · 240MHz · 4MB Flash</text>
+        <!-- Left pins -->
+        <text x="508" y="120" font-family="JetBrains Mono" font-size="8" fill="#ffb347">3.3V ●</text>
+        <text x="508" y="140" font-family="JetBrains Mono" font-size="8" fill="#ff4757">GND  ●</text>
+        <text x="508" y="160" font-family="JetBrains Mono" font-size="8" fill="#82aaff">GPIO16 (RX2) ●</text>
+        <text x="508" y="180" font-family="JetBrains Mono" font-size="8" fill="#00b4ff">GPIO17 (TX2) ●</text>
+        <text x="508" y="200" font-family="JetBrains Mono" font-size="8" fill="#c792ea">GPIO2 (LED) ●</text>
+        <text x="508" y="220" font-family="JetBrains Mono" font-size="8" fill="#c3e88d">GPIO4 (SDA) ●</text>
+        <text x="508" y="240" font-family="JetBrains Mono" font-size="8" fill="#c3e88d">GPIO5 (SCL) ●</text>
+        <!-- Core box -->
+        <rect x="545" y="265" width="85" height="70" rx="4" fill="#0a1020" stroke="#243438" stroke-width="1"/>
+        <text x="587" y="286" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#3d5560">Wi-Fi 802.11</text>
+        <text x="587" y="300" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#3d5560">BLE 4.2</text>
+        <text x="587" y="315" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#3d5560">UART · I²C · SPI</text>
+        <text x="587" y="330" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#3d5560">SHA-256 (HW)</text>
+        <!-- Antenna symbol -->
+        <text x="657" y="160" font-family="JetBrains Mono" font-size="18" fill="#185fa5">📶</text>
+        <text x="645" y="180" font-family="JetBrains Mono" font-size="8" fill="#3d5560">ANTENNA</text>
+        <!-- USB port -->
+        <rect x="545" y="375" width="85" height="18" rx="3" fill="#1a2428" stroke="#243438" stroke-width="1"/>
+        <text x="587" y="388" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#7a9aa0">USB-C (flash + 5V)</text>
+      </g>
+
+      <!-- ── LED INDICATOR ── -->
+      <g>
+        <circle cx="750" cy="165" r="18" fill="#1a0f2e" stroke="#6a3fcc" stroke-width="1.5"/>
+        <circle cx="750" cy="165" r="8" fill="#9d6fff" opacity="0.6"/>
+        <text x="750" y="196" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#7a9aa0">LED Status</text>
+        <text x="750" y="210" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#3d5560">GPIO2 + 330Ω</text>
+      </g>
+
+      <!-- ── OLED (optionnel) ── -->
+      <g>
+        <rect x="720" y="260" width="140" height="80" rx="5" fill="#050810" stroke="#0088cc" stroke-width="1.5"/>
+        <text x="790" y="278" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#3d5560">SSD1306 OLED 128×64</text>
+        <!-- Fake OLED content -->
+        <text x="728" y="300" font-family="JetBrains Mono" font-size="9" fill="#00b4ff">P: 850 W</text>
+        <text x="728" y="315" font-family="JetBrains Mono" font-size="9" fill="#00e896">CO2: 0.47 g</text>
+        <text x="728" y="330" font-family="JetBrains Mono" font-size="9" fill="#7a9aa0">WiFi: ████░</text>
+        <text x="790" y="352" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#3d5560">(Optionnel)</text>
+      </g>
+
+      <!-- ── POWER SUPPLY ── -->
+      <g>
+        <rect x="360" y="360" width="100" height="55" rx="5" fill="#1a1a0f" stroke="#cc8a2a" stroke-width="1"/>
+        <text x="410" y="380" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#ffb347">HLK-PM01</text>
+        <text x="410" y="393" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#3d5560">220V → 5V DC</text>
+        <text x="410" y="407" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#3d5560">600mA max</text>
+      </g>
+
+      <!-- ══ WIRES ══ -->
+
+      <!-- Secteur L → PZEM AC IN -->
+      <line x1="110" y1="197" x2="170" y2="140" stroke="#ff4757" stroke-width="1.5" marker-end="url(#arr)" opacity="0.8"/>
+      <!-- Secteur N → PZEM AC IN -->
+      <line x1="110" y1="230" x2="170" y2="164" stroke="#3d5560" stroke-width="1.5" opacity="0.7"/>
+
+      <!-- PZEM TX → Diviseur → ESP32 RX2 -->
+      <line x1="320" y1="281" x2="360" y2="220" stroke="#82aaff" stroke-width="1.5" opacity="0.9"/>
+      <line x1="440" y1="220" x2="490" y2="160" stroke="#82aaff" stroke-width="1.5" marker-end="url(#arr)" opacity="0.9"/>
+      <!-- PZEM RX ← ESP32 TX2 (direct, 3.3V ok) -->
+      <path d="M320 264 Q360 264 400 240 Q440 216 490 180" stroke="#00b4ff" stroke-width="1.5" stroke-dasharray="5 3" fill="none" marker-end="url(#arr)" opacity="0.9"/>
+      <!-- PZEM 5V ← Power supply -->
+      <line x1="320" y1="230" x2="360" y2="387" stroke="#ffb347" stroke-width="1.5" opacity="0.6"/>
+      <line x1="460" y1="387" x2="490" y2="120" stroke="#ffb347" stroke-width="1.5" opacity="0.6"/>
+      <!-- GND common -->
+      <line x1="320" y1="247" x2="350" y2="247" stroke="#ff4757" stroke-width="1" opacity="0.5"/>
+      <line x1="350" y1="247" x2="350" y2="420" stroke="#ff4757" stroke-width="1" stroke-dasharray="3 2" opacity="0.4"/>
+      <line x1="350" y1="420" x2="490" y2="140" stroke="#ff4757" stroke-width="1" stroke-dasharray="3 2" opacity="0.4"/>
+
+      <!-- ESP32 → LED -->
+      <line x1="680" y1="200" x2="732" y2="165" stroke="#c792ea" stroke-width="1.5" marker-end="url(#arr)" opacity="0.8"/>
+      <!-- ESP32 I2C → OLED -->
+      <line x1="680" y1="220" x2="720" y2="285" stroke="#c3e88d" stroke-width="1.5" opacity="0.8"/>
+      <line x1="680" y1="240" x2="720" y2="300" stroke="#c3e88d" stroke-width="1.5" opacity="0.8"/>
+
+      <!-- Labels on wires -->
+      <text x="133" y="173" font-family="JetBrains Mono" font-size="8" fill="#ff4757" transform="rotate(-40,133,173)">220V L</text>
+      <text x="340" y="190" font-family="JetBrains Mono" font-size="8" fill="#82aaff">UART TX</text>
+      <text x="340" y="256" font-family="JetBrains Mono" font-size="8" fill="#00b4ff">UART RX</text>
+      <text x="455" y="405" font-family="JetBrains Mono" font-size="8" fill="#ffb347">+5V</text>
+    </svg>
+  </div>
+
+  <!-- Pinout table -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-dot" style="background:var(--green)"></div>
+        <div class="card-title">Connexions ESP32 ↔ PZEM-004T</div>
+      </div>
+      <div class="card-body" style="padding:0">
+        <table class="pin-table">
+          <thead><tr><th>ESP32 Pin</th><th>GPIO</th><th>→</th><th>PZEM Pin</th><th>Note</th></tr></thead>
+          <tbody>
+            <tr><td class="pin-num">GPIO 16</td><td class="pin-fn">RX2</td><td style="color:var(--text3)">←</td><td class="pin-sig">TX</td><td style="color:var(--text3)">Via diviseur 5V→3.3V</td></tr>
+            <tr><td class="pin-num">GPIO 17</td><td class="pin-fn">TX2</td><td style="color:var(--text3)">→</td><td class="pin-sig">RX</td><td style="color:var(--text3)">Direct (3.3V compatible)</td></tr>
+            <tr><td class="pin-num">3.3V</td><td class="pin-pwr">VCC</td><td style="color:var(--text3)">→</td><td class="pin-pwr">5V via boost</td><td style="color:var(--text3)">Ou 5V externe HLK-PM01</td></tr>
+            <tr><td class="pin-num">GND</td><td class="pin-gnd">GND</td><td style="color:var(--text3)">—</td><td class="pin-gnd">GND</td><td style="color:var(--text3)">Commun obligatoire</td></tr>
+            <tr><td class="pin-num">GPIO 2</td><td class="pin-fn">LED</td><td style="color:var(--text3)">→</td><td style="color:var(--purple)">LED + 330Ω</td><td style="color:var(--text3)">Indicateur d'état</td></tr>
+            <tr><td class="pin-num">GPIO 4</td><td class="pin-fn">I²C SDA</td><td style="color:var(--text3)">→</td><td style="color:var(--text2)">OLED SDA</td><td style="color:var(--text3)">Optionnel</td></tr>
+            <tr><td class="pin-num">GPIO 5</td><td class="pin-fn">I²C SCL</td><td style="color:var(--text3)">→</td><td style="color:var(--text2)">OLED SCL</td><td style="color:var(--text3)">Optionnel</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-dot" style="background:var(--amber)"></div>
+        <div class="card-title">⚠️ Points de sécurité critiques</div>
+      </div>
+      <div class="card-body">
+        <div class="step-list">
+          <div class="step-item done">
+            <span class="step-icon">✓</span>
+            <div class="step-text"><strong>Isolation galvanique obligatoire</strong>Le PZEM-004T est branché directement sur le 220V. Ne jamais toucher les bornes AC en fonctionnement.</div>
+          </div>
+          <div class="step-item done">
+            <span class="step-icon">✓</span>
+            <div class="step-text"><strong>Diviseur de tension sur UART TX du PZEM</strong>Le PZEM sort du 5V sur son TX. L'ESP32 tolère max 3.3V. Utiliser R1=1kΩ / R2=2kΩ.</div>
+          </div>
+          <div class="step-item done">
+            <span class="step-icon">✓</span>
+            <div class="step-text"><strong>Alimentation séparée pour le PZEM</strong>Le module HLK-PM01 (220V→5V) fournit les 5V au PZEM. L'ESP32 est alimenté par USB séparé.</div>
+          </div>
+          <div class="step-item done">
+            <span class="step-icon">✓</span>
+            <div class="step-text"><strong>CT Clamp sur le fil de phase uniquement</strong>Passer seulement le fil L (phase) dans le collier de courant, jamais les deux fils ensemble.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ TAB 3 : FIRMWARE ═══════════════ -->
+<div class="panel" id="panel-firmware">
+  <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+    <button class="btn btn-green" onclick="showFile('main')" id="fb-main">main.cpp</button>
+    <button class="btn" onclick="showFile('pzem')" id="fb-pzem">pzem_reader.h</button>
+    <button class="btn" onclick="showFile('co2')" id="fb-co2">co2_calc.h</button>
+    <button class="btn" onclick="showFile('crypto')" id="fb-crypto">crypto_sign.h</button>
+    <button class="btn" onclick="showFile('mqtt')" id="fb-mqtt">mqtt_client.h</button>
+    <button class="btn" onclick="showFile('config')" id="fb-config">config.h</button>
+  </div>
+  <div id="code-display"></div>
+</div>
+
+<!-- ═══════════════ TAB 4 : CONSOLE SÉRIE ═══════════════ -->
+<div class="panel" id="panel-serial">
+  <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px">
+    <span style="font-family:var(--mono);font-size:11px;color:var(--text3)">Port:</span>
+    <span style="font-family:var(--mono);font-size:11px;color:var(--green)">COM3 (USB-SERIAL CH340)</span>
+    <span style="font-family:var(--mono);font-size:11px;color:var(--text3)">·</span>
+    <span style="font-family:var(--mono);font-size:11px;color:var(--amber)">115200 baud</span>
+    <button class="btn" style="margin-left:auto" onclick="clearConsole()">↺ Clear</button>
+    <button class="btn btn-green" id="console-btn" onclick="toggleConsole()">⏸ Pause</button>
+  </div>
+  <div class="console" id="serial-console"></div>
+  <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div class="card">
+      <div class="card-header"><div class="card-dot" style="background:var(--green)"></div><div class="card-title">Boot Sequence</div></div>
+      <div class="card-body">
+        <div class="step-list" id="boot-steps">
+          <div class="step-item done"><span class="step-icon">✓</span><div class="step-text"><strong>Flash init — OK</strong>Partition table lue, SPIFFS monté</div></div>
+          <div class="step-item done"><span class="step-icon">✓</span><div class="step-text"><strong>PZEM-004T détecté</strong>UART2 @4800 baud, réponse OK</div></div>
+          <div class="step-item done"><span class="step-icon">✓</span><div class="step-text"><strong>Wi-Fi connecté</strong>SSID: Carbon-Lab · IP: 192.168.1.42</div></div>
+          <div class="step-item done"><span class="step-icon">✓</span><div class="step-text"><strong>MQTT broker joignable</strong>broker.hivemq.com:1883</div></div>
+          <div class="step-item done"><span class="step-icon">✓</span><div class="step-text"><strong>Crypto init — OK</strong>Clé ECDSA chargée depuis NVS</div></div>
+          <div class="step-item active"><span class="step-icon">◉</span><div class="step-text"><strong>Acquisition en cours</strong>Intervalle: 5s</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-dot" style="background:var(--blue)"></div><div class="card-title">Registres PZEM (raw)</div></div>
+      <div class="card-body">
+        <table class="pin-table">
+          <thead><tr><th>Registre</th><th>Addr (hex)</th><th>Valeur</th><th>Unité</th></tr></thead>
+          <tbody>
+            <tr><td class="pin-fn">Voltage</td><td class="pin-num">0x0000</td><td id="reg-v" class="pin-sig">2300</td><td style="color:var(--text3)">×0.1 V</td></tr>
+            <tr><td class="pin-fn">Current</td><td class="pin-num">0x0001</td><td id="reg-i" class="pin-sig">370</td><td style="color:var(--text3)">×0.01 A</td></tr>
+            <tr><td class="pin-fn">Power Lo</td><td class="pin-num">0x0003</td><td id="reg-p" class="pin-sig">850</td><td style="color:var(--text3)">×0.1 W</td></tr>
+            <tr><td class="pin-fn">Energy Lo</td><td class="pin-num">0x0005</td><td id="reg-e" class="pin-sig">0</td><td style="color:var(--text3)">×1 Wh</td></tr>
+            <tr><td class="pin-fn">Frequency</td><td class="pin-num">0x0007</td><td class="pin-sig">500</td><td style="color:var(--text3)">×0.1 Hz</td></tr>
+            <tr><td class="pin-fn">PF</td><td class="pin-num">0x0008</td><td class="pin-sig">950</td><td style="color:var(--text3)">×0.01</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ TAB 5 : CRYPTO ═══════════════ -->
+<div class="panel" id="panel-crypto">
+  <div class="grid-2" style="margin-bottom:16px">
+    <div>
+      <div class="section-title">Pipeline de sécurisation</div>
+      <div class="step-list">
+        <div class="step-item done"><span class="step-icon">①</span><div class="step-text"><strong>Lecture capteur</strong>V=<span id="cr-v">230.0</span>V · I=<span id="cr-i">3.70</span>A · P=<span id="cr-p">850</span>W · E=<span id="cr-e">0.000</span>kWh</div></div>
+        <div class="step-item done"><span class="step-icon">②</span><div class="step-text"><strong>Construction du payload JSON</strong><span id="cr-json" style="color:var(--blue);font-family:var(--mono);font-size:10px;word-break:break-all"></span></div></div>
+        <div class="step-item done"><span class="step-icon">③</span><div class="step-text"><strong>Hash SHA-256 du payload</strong></div></div>
+        <div class="step-item done"><span class="step-icon">④</span><div class="step-text"><strong>Signature ECDSA secp256k1</strong>Clé privée depuis NVS chiffrée (AES-256)</div></div>
+        <div class="step-item done"><span class="step-icon">⑤</span><div class="step-text"><strong>Publication MQTT</strong>Topic: carbon/v1/measures · QoS 1</div></div>
+        <div class="step-item done"><span class="step-icon">⑥</span><div class="step-text"><strong>Envoi hash → Backend</strong>REST POST /api/measures · TLS 1.3</div></div>
+      </div>
+    </div>
+    <div>
+      <div class="section-title">Valeurs cryptographiques live</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:0.1em;margin-bottom:6px">DEVICE ID</div>
+          <div class="hash-display" style="color:var(--amber);background:rgba(255,179,71,0.06);border-color:rgba(255,179,71,0.2)">ESP32-CLedger-A3F7B291</div>
+        </div>
+        <div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:0.1em;margin-bottom:6px">SHA-256 HASH (payload)</div>
+          <div class="hash-display" id="hash-display">—</div>
+        </div>
+        <div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:0.1em;margin-bottom:6px">ECDSA SIGNATURE (secp256k1)</div>
+          <div class="hash-display" style="color:var(--green)" id="sig-display">—</div>
+        </div>
+        <div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:0.1em;margin-bottom:6px">PUBLIC KEY (compressed)</div>
+          <div class="hash-display" style="color:var(--blue2)">02a1b3c4d5e6f7089abcdef01234567890abcdef01234567890abcdef01234567</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+          <div style="width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)"></div>
+          <span style="font-family:var(--mono);font-size:11px;color:var(--green)">SIGNATURE VÉRIFIÉE ✓</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-dot" style="background:var(--purple)"></div><div class="card-title">Modèle de données — Blockchain Record</div></div>
+    <div class="card-body">
+      <div class="code-block" id="blockchain-json"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ TAB 6 : MQTT ═══════════════ -->
+<div class="panel" id="panel-mqtt">
+  <div class="grid-2" style="margin-bottom:16px">
+    <div class="card">
+      <div class="card-header"><div class="card-dot" style="background:var(--blue)"></div><div class="card-title">Broker Configuration</div></div>
+      <div class="card-body">
+        <table class="pin-table">
+          <tbody>
+            <tr><td class="pin-fn">Broker</td><td class="pin-sig">broker.hivemq.com</td></tr>
+            <tr><td class="pin-fn">Port TCP</td><td class="pin-sig">1883</td></tr>
+            <tr><td class="pin-fn">Port TLS</td><td class="pin-sig">8883</td></tr>
+            <tr><td class="pin-fn">Client ID</td><td class="pin-sig">ESP32-CLedger-A3F7B291</td></tr>
+            <tr><td class="pin-fn">Auth</td><td class="pin-sig">Username + Password</td></tr>
+            <tr><td class="pin-fn">QoS</td><td class="pin-sig">1 (at least once)</td></tr>
+            <tr><td class="pin-fn">Keep Alive</td><td class="pin-sig">60 s</td></tr>
+            <tr><td class="pin-fn">Retain</td><td class="pin-sig">false</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-dot" style="background:var(--green)"></div><div class="card-title">Topics Structure</div></div>
+      <div class="card-body">
+        <table class="pin-table">
+          <thead><tr><th>Topic</th><th>Direction</th><th>Contenu</th></tr></thead>
+          <tbody>
+            <tr><td class="pin-fn">carbon/v1/measures</td><td class="pin-pwr">PUB</td><td style="color:var(--text3)">Mesure complète + signature</td></tr>
+            <tr><td class="pin-fn">carbon/v1/status</td><td class="pin-pwr">PUB</td><td style="color:var(--text3)">Heartbeat device (1/min)</td></tr>
+            <tr><td class="pin-fn">carbon/v1/config</td><td style="color:var(--blue)">SUB</td><td style="color:var(--text3)">Mise à jour FE, intervalle</td></tr>
+            <tr><td class="pin-fn">carbon/v1/reset</td><td style="color:var(--blue)">SUB</td><td style="color:var(--text3)">Remise à zéro compteur énergie</td></tr>
+            <tr><td class="pin-fn">carbon/v1/ack</td><td style="color:var(--blue)">SUB</td><td style="color:var(--text3)">Confirmation enregistrement BC</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-dot" style="background:var(--green)"></div>
+      <div class="card-title">Messages MQTT — Live Stream</div>
+      <span style="margin-left:auto;font-family:var(--mono);font-size:9px;color:var(--text3)" id="mqtt-count">0 messages</span>
+    </div>
+    <div class="card-body" style="padding:0">
+      <div class="mqtt-log" id="mqtt-log"></div>
+    </div>
+  </div>
+
+  <div style="margin-top:16px" class="card">
+    <div class="card-header"><div class="card-dot" style="background:var(--purple)"></div><div class="card-title">Payload JSON type — carbon/v1/measures</div></div>
+    <div class="card-body">
+      <div class="code-block" id="mqtt-payload-example"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════
+let simRunning = true;
+let startTime = Date.now();
+let energyWh = 0;
+let co2Grams = 0;
+let measureCount = 0;
+let mqttCount = 0;
+let consoleRunning = true;
+let wavePhase = 0;
+
+const waveHistory = { v: [], i: [], t: [] };
+const co2History = { vals: [], labels: [] };
+const MAX_POINTS = 120;
+const CO2_HISTORY_MAX = 30;
+
+// ═══════════════════════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════════════════════
+function noise(amp) { return (Math.random() - 0.5) * 2 * amp; }
+function clamp(v, min, max) { return Math.min(max, Math.max(min, v)); }
+function toHex(n) { return n.toString(16).padStart(2, '0'); }
+function fakeHash(seed) {
+  let h = '';
+  for (let i = 0; i < 64; i++) {
+    h += Math.floor(Math.abs(Math.sin(seed + i * 7.3) * 16)).toString(16);
+  }
+  return h;
+}
+function fakeSig(seed) {
+  let s = '';
+  for (let i = 0; i < 128; i++) {
+    s += Math.floor(Math.abs(Math.sin(seed + i * 13.7) * 16)).toString(16);
+  }
+  return s;
+}
+
+// ═══════════════════════════════════════════════════════
+//  TABS
+// ═══════════════════════════════════════════════════════
+function switchTab(id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  document.getElementById('panel-' + id).classList.add('active');
+  if (id === 'firmware') showFile('main');
+}
+
+// ═══════════════════════════════════════════════════════
+//  SLIDERS
+// ═══════════════════════════════════════════════════════
+function updateSliders() {
+  document.getElementById('sv-power').textContent = document.getElementById('sl-power').value + ' W';
+  document.getElementById('sv-noise').textContent = document.getElementById('sl-noise').value + ' %';
+  document.getElementById('sv-fe').textContent = (document.getElementById('sl-fe').value / 1000).toFixed(3);
+  document.getElementById('sv-interval').textContent = document.getElementById('sl-interval').value + ' s';
+}
+
+// ═══════════════════════════════════════════════════════
+//  SIM CONTROL
+// ═══════════════════════════════════════════════════════
+function toggleSim() {
+  simRunning = !simRunning;
+  document.getElementById('sim-btn').textContent = simRunning ? '⏸ PAUSE' : '▶ START';
+  document.getElementById('sim-btn').className = simRunning ? 'btn btn-green' : 'btn btn-red';
+}
+function resetSim() {
+  energyWh = 0; co2Grams = 0; measureCount = 0;
+  co2History.vals = []; co2History.labels = [];
+  waveHistory.v = []; waveHistory.i = []; waveHistory.t = [];
+  startTime = Date.now();
+}
+
+// ═══════════════════════════════════════════════════════
+//  UPTIME
+// ═══════════════════════════════════════════════════════
+function formatUptime(ms) {
+  const s = Math.floor(ms / 1000);
+  const h = Math.floor(s / 3600).toString().padStart(2, '0');
+  const m = Math.floor((s % 3600) / 60).toString().padStart(2, '0');
+  const sec = (s % 60).toString().padStart(2, '0');
+  return `${h}:${m}:${sec}`;
+}
+
+// ═══════════════════════════════════════════════════════
+//  MAIN UPDATE LOOP
+// ═══════════════════════════════════════════════════════
+let lastMeasureTime = 0;
+let pktCount = 0;
+let pktTimer = 0;
+
+function update() {
+  const now = Date.now();
+  const elapsed = (now - startTime) / 1000;
+
+  document.getElementById('uptime-display').textContent = formatUptime(now - startTime);
+
+  if (!simRunning) { requestAnimationFrame(update); return; }
+
+  const basePower = parseFloat(document.getElementById('sl-power').value);
+  const noiseLevel = parseFloat(document.getElementById('sl-noise').value) / 100;
+  const fe = parseFloat(document.getElementById('sl-fe').value) / 1000;
+  const interval = parseFloat(document.getElementById('sl-interval').value);
+  const hasHarmonics = document.getElementById('tg-rectifier').checked;
+  const hasSpike = document.getElementById('tg-spike').checked;
+
+  // Spike simulation
+  let spikeBoost = 0;
+  if (hasSpike && Math.random() < 0.003) spikeBoost = basePower * 3;
+
+  // Power with noise
+  const pNow = basePower * (1 + noise(noiseLevel)) + spikeBoost;
+  const vNow = 230 * (1 + noise(noiseLevel * 0.1));
+  const pfNow = hasHarmonics ? 0.72 + noise(0.05) : 0.95 + noise(0.02);
+  const iNow = pNow / (vNow * pfNow);
+
+  // Energy accumulation
+  // pNow est en W → diviser par 1000 pour avoir kWh
+  energyWh += (pNow / 1000 / 3600) * 0.05; // 50ms update → kWh
+  co2Grams += (pNow / 1000 / 3600) * 0.05 * fe * 1000; // gCO₂
+
+  // Update metric displays
+  document.getElementById('m-v').innerHTML = vNow.toFixed(1) + '<span class="metric-unit">V</span>';
+  document.getElementById('m-i').innerHTML = iNow.toFixed(2) + '<span class="metric-unit">A</span>';
+  document.getElementById('m-p').innerHTML = Math.round(pNow) + '<span class="metric-unit">W</span>';
+  document.getElementById('m-pf').textContent = pfNow.toFixed(2);
+  document.getElementById('m-energy').textContent = energyWh.toFixed(4);
+  document.getElementById('m-co2').innerHTML = co2Grams.toFixed(3) + '<span class="metric-unit">g</span>';
+  // Taux instantané : pNow (W) → kW → kgCO₂/h → gCO₂/min
+  const co2RatePerMin = (pNow / 1000) * fe * 1000 / 60;
+  document.getElementById('m-co2-rate').textContent = co2RatePerMin.toFixed(2);
+  document.getElementById('m-v-noise').textContent = (vNow * noiseLevel * 0.1).toFixed(2);
+
+  // Register display (raw values like PZEM)
+  document.getElementById('reg-v').textContent = Math.round(vNow * 10);
+  document.getElementById('reg-i').textContent = Math.round(iNow * 100);
+  document.getElementById('reg-p').textContent = Math.round(pNow * 10);
+  document.getElementById('reg-e').textContent = Math.round(energyWh);
+
+  // Waveform
+  wavePhase += 0.1;
+  for (let i = 0; i < 3; i++) {
+    const t = wavePhase + i * 0.033;
+    let v = vNow * Math.sin(t * 2 * Math.PI);
+    let iw = iNow * Math.sin(t * 2 * Math.PI - (hasHarmonics ? 0.5 : 0.1));
+    if (hasHarmonics) {
+      v += vNow * 0.15 * Math.sin(t * 2 * Math.PI * 3);
+      iw += iNow * 0.25 * Math.sin(t * 2 * Math.PI * 3);
+    }
+    waveHistory.v.push(v);
+    waveHistory.i.push(iw);
+    if (waveHistory.v.length > MAX_POINTS) { waveHistory.v.shift(); waveHistory.i.shift(); }
+  }
+
+  drawWaveCanvas(vNow, iNow);
+  drawFFTCanvas(pNow, hasHarmonics);
+
+  // Measure interval → CO2 chart + crypto
+  if (now - lastMeasureTime > interval * 1000) {
+    lastMeasureTime = now;
+    measureCount++;
+    pktCount++;
+
+    const ts = new Date().toISOString();
+    const co2Val = co2Grams.toFixed(3);
+    const hash = fakeHash(now);
+    const sig = fakeSig(now);
+
+    co2History.vals.push(parseFloat(co2Val));
+    co2History.labels.push(ts.substr(11, 8));
+    if (co2History.vals.length > CO2_HISTORY_MAX) { co2History.vals.shift(); co2History.labels.shift(); }
+    drawCO2Canvas();
+
+    // Update crypto tab
+    const payload = {
+      device_id: "ESP32-CLedger-A3F7B291",
+      timestamp: ts,
+      voltage_v: parseFloat(vNow.toFixed(2)),
+      current_a: parseFloat(iNow.toFixed(3)),
+      power_w: Math.round(pNow),
+      energy_kwh: parseFloat(energyWh.toFixed(6)),       // déjà en kWh
+      co2_kg: parseFloat((co2Grams / 1000).toFixed(6)),  // g → kg
+      power_factor: parseFloat(pfNow.toFixed(3)),
+      frequency_hz: 50.0
+    };
+    document.getElementById('cr-v').textContent = vNow.toFixed(1);
+    document.getElementById('cr-i').textContent = iNow.toFixed(2);
+    document.getElementById('cr-p').textContent = Math.round(pNow);
+    document.getElementById('cr-e').textContent = energyWh.toFixed(4); // déjà en kWh
+    document.getElementById('cr-json').textContent = JSON.stringify(payload, null, 0).replace(/,/g, ', ');
+    document.getElementById('hash-display').textContent = hash;
+    document.getElementById('sig-display').textContent = 'r=' + sig.substr(0, 64) + '\ns=' + sig.substr(64);
+
+    const bcRecord = {
+      txHash: '0x' + hash,
+      blockNumber: 142 + measureCount,
+      timestamp: ts,
+      deviceId: "ESP32-CLedger-A3F7B291",
+      measureHash: hash,
+      co2Value_kg: parseFloat((co2Grams / 1000).toFixed(6)),
+      energyKwh: parseFloat(energyWh.toFixed(6)),
+      signature: sig.substr(0, 32) + '...',
+      publicKey: '02a1b3c4d5e6f7089abcdef01234567890abcdef',
+      chaincode: 'carbon-trace-v1',
+      channelId: 'carbonchannel'
+    };
+    document.getElementById('blockchain-json').textContent = JSON.stringify(bcRecord, null, 2);
+
+    // MQTT log
+    mqttCount++;
+    document.getElementById('mqtt-count').textContent = mqttCount + ' messages';
+    const mqttLog = document.getElementById('mqtt-log');
+    const entry = document.createElement('div');
+    entry.className = 'mqtt-entry';
+    entry.innerHTML = `<span class="mqtt-ts">${ts.substr(11, 8)}</span><span class="mqtt-topic">carbon/v1/measures</span><span class="mqtt-payload">${JSON.stringify(payload).substr(0, 80)}...</span>`;
+    mqttLog.appendChild(entry);
+    mqttLog.scrollTop = mqttLog.scrollHeight;
+
+    const payloadEx = {
+      ...payload,
+      hash_sha256: hash,
+      signature_ecdsa: sig.substr(0, 32) + '...',
+      fw_version: '1.0.3'
+    };
+    document.getElementById('mqtt-payload-example').textContent = JSON.stringify(payloadEx, null, 2);
+
+    addConsoleLog(vNow, iNow, pNow, energyWh, co2Grams, hash, fe);
+  }
+
+  // pkt counter
+  if (now - pktTimer > 1000) {
+    document.getElementById('packet-count').textContent = pktCount + ' pkt/s';
+    pktCount = 0; pktTimer = now;
+  }
+
+  requestAnimationFrame(update);
+}
+
+// ═══════════════════════════════════════════════════════
+//  CANVAS DRAWINGS
+// ═══════════════════════════════════════════════════════
+function drawWaveCanvas(vPeak, iPeak) {
+  const canvas = document.getElementById('waveCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth || 500;
+  canvas.width = W; canvas.height = 180;
+  const H = 180;
+  const mid = H / 2;
+
+  ctx.fillStyle = '#050808';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = '#1a2428'; ctx.lineWidth = 0.5;
+  for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  for (let y = 0; y < H; y += 30) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+  ctx.strokeStyle = '#1f2d32';
+  ctx.beginPath(); ctx.moveTo(0, mid); ctx.lineTo(W, mid); ctx.stroke();
+
+  const pts = waveHistory.v.length;
+  const scaleV = (H * 0.4) / (vPeak * 1.05 || 1);
+  const scaleI = (H * 0.35) / (iPeak * 1.05 || 1);
+
+  // Voltage waveform
+  ctx.strokeStyle = '#ffb347'; ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  for (let i = 0; i < pts; i++) {
+    const x = (i / pts) * W;
+    const y = mid - waveHistory.v[i] * scaleV;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Current waveform
+  ctx.strokeStyle = '#00b4ff'; ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  for (let i = 0; i < pts; i++) {
+    const x = (i / pts) * W;
+    const y = mid - waveHistory.i[i] * scaleI;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Labels
+  ctx.font = '9px JetBrains Mono';
+  ctx.fillStyle = '#ffb347'; ctx.fillText('V', 6, 14);
+  ctx.fillStyle = '#00b4ff'; ctx.fillText('I', 20, 14);
+  ctx.fillStyle = '#3d5560'; ctx.fillText('50 Hz', W - 42, 14);
+}
+
+function drawCO2Canvas() {
+  const canvas = document.getElementById('co2Canvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth || 500;
+  canvas.width = W; canvas.height = 180;
+  const H = 180; const PAD = { t: 15, b: 25, l: 40, r: 10 };
+  const CW = W - PAD.l - PAD.r;
+  const CH = H - PAD.t - PAD.b;
+
+  ctx.fillStyle = '#050808'; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = '#1a2428'; ctx.lineWidth = 0.5;
+  for (let y = 0; y <= 4; y++) {
+    const yy = PAD.t + (y / 4) * CH;
+    ctx.beginPath(); ctx.moveTo(PAD.l, yy); ctx.lineTo(W - PAD.r, yy); ctx.stroke();
+  }
+
+  const vals = co2History.vals;
+  if (vals.length < 2) return;
+  const maxVal = Math.max(...vals) * 1.1 || 1;
+
+  ctx.strokeStyle = '#00e896'; ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  vals.forEach((v, i) => {
+    const x = PAD.l + (i / (vals.length - 1)) * CW;
+    const y = PAD.t + CH - (v / maxVal) * CH;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // Fill under
+  ctx.save();
+  ctx.beginPath();
+  vals.forEach((v, i) => {
+    const x = PAD.l + (i / (vals.length - 1)) * CW;
+    const y = PAD.t + CH - (v / maxVal) * CH;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.lineTo(PAD.l + CW, PAD.t + CH);
+  ctx.lineTo(PAD.l, PAD.t + CH);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, PAD.t, 0, PAD.t + CH);
+  grad.addColorStop(0, 'rgba(0,232,150,0.25)');
+  grad.addColorStop(1, 'rgba(0,232,150,0)');
+  ctx.fillStyle = grad; ctx.fill();
+  ctx.restore();
+
+  // Y axis label
+  ctx.font = '9px JetBrains Mono'; ctx.fillStyle = '#3d5560';
+  ctx.fillText(maxVal.toFixed(2), 2, PAD.t + 4);
+  ctx.fillText('0', 2, PAD.t + CH);
+  ctx.fillStyle = '#00e896'; ctx.fillText('gCO₂', PAD.l + CW / 2 - 15, H - 5);
+}
+
+function drawFFTCanvas(power, hasHarmonics) {
+  const canvas = document.getElementById('fftCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth || 500;
+  canvas.width = W; canvas.height = 100;
+  const H = 100; const PAD = 20;
+  ctx.fillStyle = '#050808'; ctx.fillRect(0, 0, W, H);
+
+  const harmonics = [
+    { freq: '50 Hz (F)', amp: 1.0, color: '#00e896' },
+    { freq: '100 Hz (2F)', amp: hasHarmonics ? 0.18 + noise(0.03) : 0.02, color: '#ffb347' },
+    { freq: '150 Hz (3F)', amp: hasHarmonics ? 0.24 + noise(0.04) : 0.03, color: '#ff4757' },
+    { freq: '200 Hz (4F)', amp: hasHarmonics ? 0.08 + noise(0.02) : 0.01, color: '#ffb347' },
+    { freq: '250 Hz (5F)', amp: hasHarmonics ? 0.15 + noise(0.03) : 0.02, color: '#ff4757' },
+    { freq: '300 Hz (6F)', amp: hasHarmonics ? 0.04 : 0.005, color: '#ffb347' },
+    { freq: '350 Hz (7F)', amp: hasHarmonics ? 0.10 + noise(0.02) : 0.01, color: '#ff4757' },
+  ];
+
+  const barW = (W - 2 * PAD) / harmonics.length - 4;
+  ctx.font = '8px JetBrains Mono';
+  harmonics.forEach((h, i) => {
+    const x = PAD + i * ((W - 2 * PAD) / harmonics.length);
+    const bh = h.amp * (H - 30);
+    ctx.fillStyle = h.color + '33';
+    ctx.fillRect(x, H - 15 - bh, barW, bh);
+    ctx.fillStyle = h.color;
+    ctx.fillRect(x, H - 15 - bh, barW, 2);
+    ctx.fillStyle = '#3d5560';
+    ctx.save(); ctx.translate(x + barW / 2, H - 5); ctx.rotate(-Math.PI / 4);
+    ctx.fillText(h.freq, 0, 0); ctx.restore();
+  });
+  ctx.fillStyle = '#3d5560';
+  ctx.fillText(hasHarmonics ? 'THD ≈ 34%' : 'THD < 5%', W - 70, 14);
+}
+
+// ═══════════════════════════════════════════════════════
+//  CONSOLE SERIAL
+// ═══════════════════════════════════════════════════════
+function addConsoleLog(v, i, p, e, co2, hash, fe) {
+  if (!consoleRunning) return;
+  const console_el = document.getElementById('serial-console');
+  const ts = new Date().toISOString().substr(11, 12);
+  const lines = [
+    `<span class="con-ts">[${ts}]</span> <span class="con-ok">PZEM READ OK</span>`,
+    `<span class="con-ts">[${ts}]</span> <span class="con-data">  V=${v.toFixed(2)}V  I=${i.toFixed(3)}A  P=${Math.round(p)}W  E=${(e/1000).toFixed(4)}kWh  PF=${(p/(v*i)).toFixed(2)}</span>`,
+    `<span class="con-ts">[${ts}]</span> <span class="con-data">  CO2=${co2.toFixed(3)}g  (FE=${fe.toFixed(3)} kgCO2/kWh)</span>`,
+    `<span class="con-ts">[${ts}]</span> <span class="con-hash">  SHA256=${hash.substr(0, 32)}...</span>`,
+    `<span class="con-ts">[${ts}]</span> <span class="con-ok">  MQTT PUB OK → carbon/v1/measures [QoS1]</span>`,
+  ];
+  lines.forEach(l => {
+    const div = document.createElement('div');
+    div.innerHTML = l;
+    console_el.appendChild(div);
+  });
+  // keep last 200 lines
+  while (console_el.children.length > 200) console_el.removeChild(console_el.firstChild);
+  console_el.scrollTop = console_el.scrollHeight;
+}
+
+function clearConsole() { document.getElementById('serial-console').innerHTML = ''; }
+function toggleConsole() {
+  consoleRunning = !consoleRunning;
+  document.getElementById('console-btn').textContent = consoleRunning ? '⏸ Pause' : '▶ Resume';
+}
+
+// Add initial boot messages
+setTimeout(() => {
+  const c = document.getElementById('serial-console');
+  const boots = [
+    '<span class="con-ts">[00:00:00.000]</span> <span class="con-ok">═══ Carbon Ledger Firmware v1.0.3 ═══</span>',
+    '<span class="con-ts">[00:00:00.012]</span> ESP32 Chip: ESP32-D0WDQ6 Rev.1',
+    '<span class="con-ts">[00:00:00.024]</span> Flash: 4MB · PSRAM: 0',
+    '<span class="con-ts">[00:00:00.100]</span> <span class="con-ok">[NVS] Keys loaded from secure storage</span>',
+    '<span class="con-ts">[00:00:00.210]</span> <span class="con-ok">[UART2] PZEM-004T found @ 4800baud</span>',
+    '<span class="con-ts">[00:00:01.520]</span> <span class="con-ok">[WiFi] Connected: Carbon-Lab (RSSI: -48dBm)</span>',
+    '<span class="con-ts">[00:00:01.620]</span> <span class="con-data">[WiFi] IP: 192.168.1.42 GW: 192.168.1.1</span>',
+    '<span class="con-ts">[00:00:01.800]</span> <span class="con-ok">[MQTT] Connected to broker.hivemq.com:1883</span>',
+    '<span class="con-ts">[00:00:01.850]</span> <span class="con-ok">[CRYPTO] ECDSA key pair verified</span>',
+    '<span class="con-ts">[00:00:02.000]</span> <span class="con-ok">System ready. Sampling every 5s.</span>',
+    '<span class="con-ts">[00:00:02.010]</span> <span class="con-ts">─────────────────────────────────────────────</span>',
+  ];
+  boots.forEach(b => { const d = document.createElement('div'); d.innerHTML = b; c.appendChild(d); });
+}, 200);
+
+// ═══════════════════════════════════════════════════════
+//  FIRMWARE CODE FILES
+// ═══════════════════════════════════════════════════════
+const files = {
+  main: `<span class="cmt">// ═══════════════════════════════════════════════════════
+// Carbon Ledger — main.cpp
+// ESP32 · Firmware v1.0.3
+// Polytechnique Sousse
+// ═══════════════════════════════════════════════════════</span>
+
+<span class="macro">#include</span> <span class="str">"config.h"</span>
+<span class="macro">#include</span> <span class="str">"pzem_reader.h"</span>
+<span class="macro">#include</span> <span class="str">"co2_calc.h"</span>
+<span class="macro">#include</span> <span class="str">"crypto_sign.h"</span>
+<span class="macro">#include</span> <span class="str">"mqtt_client.h"</span>
+<span class="macro">#include</span> <span class="str">&lt;WiFi.h&gt;</span>
+<span class="macro">#include</span> <span class="str">&lt;ArduinoJson.h&gt;</span>
+<span class="macro">#include</span> <span class="str">&lt;Preferences.h&gt;</span>  <span class="cmt">// NVS (flash sécurisée)</span>
+
+<span class="cmt">// ── Objets globaux ──────────────────────────────────</span>
+<span class="type">PZEMReader</span>  pzem(<span class="num">16</span>, <span class="num">17</span>);      <span class="cmt">// RX2=16, TX2=17</span>
+<span class="type">CO2Calculator</span> co2Calc;
+<span class="type">CryptoSigner</span>  signer;
+<span class="type">MQTTClient</span>   mqttClient;
+<span class="type">Preferences</span>  prefs;
+
+<span class="type">float</span> totalEnergyKwh = <span class="num">0.0</span>;
+<span class="type">float</span> totalCO2Kg = <span class="num">0.0</span>;
+<span class="type">unsigned long</span> lastSampleMs = <span class="num">0</span>;
+
+<span class="cmt">// ── setup() ─────────────────────────────────────────</span>
+<span class="type">void</span> <span class="fn">setup</span>() {
+  Serial.<span class="fn">begin</span>(<span class="num">115200</span>);
+  Serial.<span class="fn">println</span>(<span class="str">"═══ Carbon Ledger v1.0.3 ═══"</span>);
+
+  <span class="cmt">// Charger config depuis NVS</span>
+  prefs.<span class="fn">begin</span>(<span class="str">"clconfig"</span>, <span class="kw">false</span>);
+  
+  <span class="cmt">// Init PZEM-004T</span>
+  <span class="kw">if</span> (!pzem.<span class="fn">begin</span>()) {
+    Serial.<span class="fn">println</span>(<span class="str">"[ERR] PZEM-004T non détecté!"</span>);
+    <span class="kw">while</span>(<span class="num">1</span>) delay(<span class="num">1000</span>); <span class="cmt">// Halt</span>
+  }
+
+  <span class="cmt">// Wi-Fi</span>
+  <span class="fn">connectWiFi</span>();
+
+  <span class="cmt">// Charger clé ECDSA depuis NVS</span>
+  <span class="kw">if</span> (!signer.<span class="fn">loadKey</span>(prefs)) {
+    Serial.<span class="fn">println</span>(<span class="str">"[CRYPTO] Génération nouvelle clé..."</span>);
+    signer.<span class="fn">generateKey</span>(prefs);
+  }
+
+  <span class="cmt">// MQTT</span>
+  mqttClient.<span class="fn">begin</span>(MQTT_BROKER, MQTT_PORT);
+  mqttClient.<span class="fn">setCallback</span>(onMQTTMessage);
+  mqttClient.<span class="fn">subscribe</span>(<span class="str">"carbon/v1/config"</span>);
+  mqttClient.<span class="fn">subscribe</span>(<span class="str">"carbon/v1/reset"</span>);
+
+  Serial.<span class="fn">println</span>(<span class="str">"[OK] Système prêt. Échantillonnage toutes "</span> 
+               + <span class="type">String</span>(SAMPLE_INTERVAL_MS/<span class="num">1000</span>) + <span class="str">"s"</span>);
+}
+
+<span class="cmt">// ── loop() ──────────────────────────────────────────</span>
+<span class="type">void</span> <span class="fn">loop</span>() {
+  mqttClient.<span class="fn">loop</span>();  <span class="cmt">// Maintenir connexion MQTT</span>
+
+  <span class="kw">if</span> (millis() - lastSampleMs >= SAMPLE_INTERVAL_MS) {
+    lastSampleMs = millis();
+    <span class="fn">takeMeasurement</span>();
+  }
+}
+
+<span class="cmt">// ── takeMeasurement() ────────────────────────────────</span>
+<span class="type">void</span> <span class="fn">takeMeasurement</span>() {
+  <span class="cmt">// 1. Lire le capteur</span>
+  <span class="type">PZEMData</span> data = pzem.<span class="fn">read</span>();
+  <span class="kw">if</span> (!data.valid) {
+    Serial.<span class="fn">println</span>(<span class="str">"[WARN] Lecture PZEM invalide, skip"</span>);
+    <span class="kw">return</span>;
+  }
+
+  <span class="cmt">// 2. Accumuler énergie</span>
+  totalEnergyKwh += (data.power_w / <span class="num">3600000.0</span>) * SAMPLE_INTERVAL_MS;
+
+  <span class="cmt">// 3. Calculer CO₂</span>
+  <span class="type">float</span> co2Delta = co2Calc.<span class="fn">compute</span>(data.energy_kwh, EMISSION_FACTOR);
+  totalCO2Kg += co2Delta;
+
+  <span class="cmt">// 4. Construire payload JSON</span>
+  <span class="type">StaticJsonDocument</span>&lt;<span class="num">512</span>&gt; doc;
+  doc[<span class="str">"device_id"</span>]  = DEVICE_ID;
+  doc[<span class="str">"timestamp"</span>]  = <span class="fn">getISO8601</span>();
+  doc[<span class="str">"voltage_v"</span>]  = data.voltage_v;
+  doc[<span class="str">"current_a"</span>]  = data.current_a;
+  doc[<span class="str">"power_w"</span>]    = data.power_w;
+  doc[<span class="str">"energy_kwh"</span>] = totalEnergyKwh;
+  doc[<span class="str">"co2_kg"</span>]     = totalCO2Kg;
+  doc[<span class="str">"pf"</span>]         = data.power_factor;
+  doc[<span class="str">"freq_hz"</span>]   = data.frequency_hz;
+
+  <span class="cmt">// 5. Signer le hash</span>
+  <span class="type">String</span> payload; serializeJson(doc, payload);
+  <span class="type">String</span> hash = signer.<span class="fn">sha256</span>(payload);
+  <span class="type">String</span> sig  = signer.<span class="fn">sign</span>(hash);
+  doc[<span class="str">"hash_sha256"</span>] = hash;
+  doc[<span class="str">"signature"</span>]  = sig;
+  doc[<span class="str">"fw_version"</span>] = FW_VERSION;
+
+  <span class="cmt">// 6. Publier MQTT</span>
+  <span class="type">String</span> finalPayload; serializeJson(doc, finalPayload);
+  mqttClient.<span class="fn">publish</span>(<span class="str">"carbon/v1/measures"</span>, finalPayload, <span class="kw">true</span>);
+
+  Serial.<span class="fn">printf</span>(<span class="str">"[OK] V=%.2fV I=%.3fA P=%.1fW CO2=%.3fg\\n"</span>,
+    data.voltage_v, data.current_a, data.power_w, totalCO2Kg * <span class="num">1000</span>);
+}`,
+
+  pzem: `<span class="cmt">// pzem_reader.h — Lecture du PZEM-004T via Modbus RTU</span>
+<span class="macro">#pragma once</span>
+<span class="macro">#include</span> <span class="str">&lt;HardwareSerial.h&gt;</span>
+<span class="macro">#include</span> <span class="str">&lt;PZEM004Tv30.h&gt;</span>  <span class="cmt">// lib: dvarrel/PZEM-004T-v30</span>
+
+<span class="kw">struct</span> <span class="type">PZEMData</span> {
+  <span class="type">float</span> voltage_v;       <span class="cmt">// Tension RMS (V)</span>
+  <span class="type">float</span> current_a;       <span class="cmt">// Courant RMS (A)</span>
+  <span class="type">float</span> power_w;         <span class="cmt">// Puissance active (W)</span>
+  <span class="type">float</span> energy_kwh;      <span class="cmt">// Énergie cumulée (kWh)</span>
+  <span class="type">float</span> frequency_hz;    <span class="cmt">// Fréquence réseau (Hz)</span>
+  <span class="type">float</span> power_factor;    <span class="cmt">// Facteur de puissance</span>
+  <span class="type">bool</span>  valid;           <span class="cmt">// Lecture valide ?</span>
+};
+
+<span class="kw">class</span> <span class="type">PZEMReader</span> {
+<span class="kw">private</span>:
+  PZEM004Tv30* _pzem;
+  <span class="type">uint8_t</span> _rxPin, _txPin;
+  <span class="type">uint32_t</span> _errorCount = <span class="num">0</span>;
+  <span class="type">PZEMData</span> _lastValid;
+
+<span class="kw">public</span>:
+  <span class="fn">PZEMReader</span>(<span class="type">uint8_t</span> rx, <span class="type">uint8_t</span> tx) : _rxPin(rx), _txPin(tx) {}
+
+  <span class="type">bool</span> <span class="fn">begin</span>() {
+    <span class="cmt">// UART2 @ 9600 baud (default PZEM)</span>
+    Serial2.<span class="fn">begin</span>(<span class="num">9600</span>, SERIAL_8N1, _rxPin, _txPin);
+    _pzem = <span class="kw">new</span> PZEM004Tv30(Serial2);
+    
+    <span class="cmt">// Test de communication</span>
+    <span class="type">float</span> v = _pzem-><span class="fn">voltage</span>();
+    <span class="kw">return</span> !isnan(v);
+  }
+
+  <span class="type">PZEMData</span> <span class="fn">read</span>() {
+    <span class="type">PZEMData</span> d;
+    d.voltage_v    = _pzem-><span class="fn">voltage</span>();
+    d.current_a    = _pzem-><span class="fn">current</span>();
+    d.power_w      = _pzem-><span class="fn">power</span>();
+    d.energy_kwh   = _pzem-><span class="fn">energy</span>();
+    d.frequency_hz = _pzem-><span class="fn">frequency</span>();
+    d.power_factor = _pzem-><span class="fn">pf</span>();
+
+    <span class="cmt">// Validation des valeurs</span>
+    d.valid = !isnan(d.voltage_v) &&
+              !isnan(d.current_a) &&
+              d.voltage_v > <span class="num">180.0</span> &&  <span class="cmt">// Plage 180-250V</span>
+              d.voltage_v < <span class="num">260.0</span> &&
+              d.current_a >= <span class="num">0.0</span>  &&
+              d.power_w   >= <span class="num">0.0</span>;
+
+    <span class="kw">if</span> (d.valid) {
+      _lastValid = d;
+      _errorCount = <span class="num">0</span>;
+    } <span class="kw">else</span> {
+      _errorCount++;
+      <span class="kw">if</span> (_errorCount > <span class="num">5</span>) {
+        Serial.<span class="fn">println</span>(<span class="str">"[WARN] PZEM: 5 erreurs consécutives"</span>);
+      }
+    }
+    <span class="kw">return</span> d.valid ? d : _lastValid;
+  }
+
+  <span class="type">uint32_t</span> <span class="fn">getErrorCount</span>() { <span class="kw">return</span> _errorCount; }
+  
+  <span class="type">void</span> <span class="fn">resetEnergy</span>() {
+    _pzem-><span class="fn">resetEnergy</span>();
+    Serial.<span class="fn">println</span>(<span class="str">"[PZEM] Compteur énergie remis à zéro"</span>);
+  }
+};`,
+
+  co2: `<span class="cmt">// co2_calc.h — Calcul des émissions CO₂ (Scope 2)</span>
+<span class="macro">#pragma once</span>
+
+<span class="cmt">// Facteurs d'émission par pays (kgCO2/kWh) - Source: IEA 2022</span>
+<span class="kw">const</span> <span class="type">float</span> FE_TUNISIE  = <span class="num">0.553</span>;   <span class="cmt">// STEG 2022</span>
+<span class="kw">const</span> <span class="type">float</span> FE_FRANCE   = <span class="num">0.059</span>;   <span class="cmt">// RTE 2022 (nucléaire)</span>
+<span class="kw">const</span> <span class="type">float</span> FE_MAROC    = <span class="num">0.684</span>;   <span class="cmt">// ONE 2022</span>
+<span class="kw">const</span> <span class="type">float</span> FE_MONDE    = <span class="num">0.491</span>;   <span class="cmt">// IEA World avg</span>
+
+<span class="kw">class</span> <span class="type">CO2Calculator</span> {
+<span class="kw">private</span>:
+  <span class="type">double</span> _totalKwh = <span class="num">0.0</span>;
+  <span class="type">double</span> _totalCO2Kg = <span class="num">0.0</span>;
+  <span class="type">float</span>  _fe;  <span class="cmt">// Facteur d'émission actif</span>
+
+<span class="kw">public</span>:
+  <span class="fn">CO2Calculator</span>(<span class="type">float</span> fe = FE_TUNISIE) : _fe(fe) {}
+
+  <span class="cmt">// Calcule CO₂ pour un delta d'énergie</span>
+  <span class="type">float</span> <span class="fn">compute</span>(<span class="type">float</span> deltaKwh, <span class="type">float</span> fe = -<span class="num">1.0</span>) {
+    <span class="kw">if</span> (fe < <span class="num">0</span>) fe = _fe;
+    <span class="type">float</span> co2Delta = deltaKwh * fe;  <span class="cmt">// kg CO₂</span>
+    _totalKwh  += deltaKwh;
+    _totalCO2Kg += co2Delta;
+    <span class="kw">return</span> co2Delta;
+  }
+
+  <span class="cmt">// Getters</span>
+  <span class="type">double</span> <span class="fn">getTotalKwh</span>()   { <span class="kw">return</span> _totalKwh; }
+  <span class="type">double</span> <span class="fn">getTotalCO2Kg</span>() { <span class="kw">return</span> _totalCO2Kg; }
+  <span class="type">float</span>  <span class="fn">getEmissionFactor</span>() { <span class="kw">return</span> _fe; }
+  
+  <span class="type">void</span> <span class="fn">setEmissionFactor</span>(<span class="type">float</span> newFE) {
+    Serial.<span class="fn">printf</span>(<span class="str">"[CO2] FE mis à jour: %.3f → %.3f kgCO2/kWh\\n"</span>, _fe, newFE);
+    _fe = newFE;
+  }
+
+  <span class="cmt">// Calcule le débit CO₂ instantané</span>
+  <span class="type">float</span> <span class="fn">getRateGPerMin</span>(<span class="type">float</span> powerW) {
+    <span class="cmt">// P(W) → kWh/min → kgCO2/min → gCO2/min</span>
+    <span class="kw">return</span> (powerW / <span class="num">60000.0</span>) * _fe * <span class="num">1000.0</span>;
+  }
+
+  <span class="type">void</span> <span class="fn">reset</span>() { _totalKwh = <span class="num">0.0</span>; _totalCO2Kg = <span class="num">0.0</span>; }
+
+  <span class="cmt">// Vérification plausibilité (sanity check)</span>
+  <span class="type">bool</span> <span class="fn">isSane</span>(<span class="type">float</span> deltaKwh) {
+    <span class="cmt">// Max 10 kW sur 5s = 0.0139 kWh max raisonnable</span>
+    <span class="kw">return</span> deltaKwh >= <span class="num">0.0</span> && deltaKwh < <span class="num">0.05</span>;
+  }
+};`,
+
+  crypto: `<span class="cmt">// crypto_sign.h — Signature ECDSA + SHA-256 (mbedTLS)</span>
+<span class="macro">#pragma once</span>
+<span class="macro">#include</span> <span class="str">&lt;mbedtls/sha256.h&gt;</span>
+<span class="macro">#include</span> <span class="str">&lt;mbedtls/ecdsa.h&gt;</span>
+<span class="macro">#include</span> <span class="str">&lt;mbedtls/entropy.h&gt;</span>
+<span class="macro">#include</span> <span class="str">&lt;mbedtls/ctr_drbg.h&gt;</span>
+<span class="macro">#include</span> <span class="str">&lt;Preferences.h&gt;</span>
+
+<span class="kw">class</span> <span class="type">CryptoSigner</span> {
+<span class="kw">private</span>:
+  mbedtls_ecdsa_context    _ctx;
+  mbedtls_entropy_context  _entropy;
+  mbedtls_ctr_drbg_context _ctr_drbg;
+  <span class="type">bool</span> _initialized = <span class="kw">false</span>;
+
+<span class="kw">public</span>:
+  <span class="fn">CryptoSigner</span>() {
+    mbedtls_ecdsa_init(&_ctx);
+    mbedtls_entropy_init(&_entropy);
+    mbedtls_ctr_drbg_init(&_ctr_drbg);
+    mbedtls_ctr_drbg_seed(&_ctr_drbg, mbedtls_entropy_func,
+                           &_entropy, nullptr, <span class="num">0</span>);
+  }
+
+  <span class="cmt">// Génère + stocke une paire de clés ECDSA secp256k1</span>
+  <span class="type">bool</span> <span class="fn">generateKey</span>(Preferences& prefs) {
+    mbedtls_ecdsa_genkey(&_ctx, MBEDTLS_ECP_DP_SECP256K1,
+                          mbedtls_ctr_drbg_random, &_ctr_drbg);
+    <span class="cmt">// Sérialiser et stocker dans NVS chiffré</span>
+    <span class="type">uint8_t</span> privBuf[<span class="num">32</span>];
+    mbedtls_mpi_write_binary(&_ctx.MBEDTLS_PRIVATE(d), privBuf, <span class="num">32</span>);
+    prefs.<span class="fn">putBytes</span>(<span class="str">"eckey"</span>, privBuf, <span class="num">32</span>);
+    _initialized = <span class="kw">true</span>;
+    Serial.<span class="fn">println</span>(<span class="str">"[CRYPTO] Clé ECDSA générée et stockée"</span>);
+    <span class="kw">return</span> <span class="kw">true</span>;
+  }
+
+  <span class="cmt">// Charge la clé depuis NVS</span>
+  <span class="type">bool</span> <span class="fn">loadKey</span>(Preferences& prefs) {
+    <span class="type">uint8_t</span> privBuf[<span class="num">32</span>];
+    <span class="type">size_t</span> len = prefs.<span class="fn">getBytes</span>(<span class="str">"eckey"</span>, privBuf, <span class="num">32</span>);
+    <span class="kw">if</span> (len != <span class="num">32</span>) <span class="kw">return</span> <span class="kw">false</span>;
+    mbedtls_mpi_read_binary(&_ctx.MBEDTLS_PRIVATE(d), privBuf, <span class="num">32</span>);
+    <span class="cmt">// Recalculer clé publique</span>
+    mbedtls_ecp_mul(&_ctx.grp, &_ctx.Q, &_ctx.MBEDTLS_PRIVATE(d),
+                    &_ctx.grp.G, mbedtls_ctr_drbg_random, &_ctr_drbg);
+    _initialized = <span class="kw">true</span>;
+    <span class="kw">return</span> <span class="kw">true</span>;
+  }
+
+  <span class="cmt">// Hash SHA-256 d'un String → hex string</span>
+  <span class="type">String</span> <span class="fn">sha256</span>(<span class="kw">const</span> <span class="type">String</span>& data) {
+    <span class="type">uint8_t</span> hash[<span class="num">32</span>];
+    mbedtls_sha256_context ctx;
+    mbedtls_sha256_init(&ctx);
+    mbedtls_sha256_starts(&ctx, <span class="num">0</span>);  <span class="cmt">// 0 = SHA-256</span>
+    mbedtls_sha256_update(&ctx, (<span class="type">const uint8_t</span>*)data.c_str(), data.length());
+    mbedtls_sha256_finish(&ctx, hash);
+    
+    <span class="type">String</span> hex = <span class="str">""</span>;
+    <span class="kw">for</span> (<span class="type">int</span> i = <span class="num">0</span>; i < <span class="num">32</span>; i++) {
+      <span class="kw">if</span>(hash[i] < <span class="num">0x10</span>) hex += <span class="str">"0"</span>;
+      hex += <span class="type">String</span>(hash[i], HEX);
+    }
+    <span class="kw">return</span> hex;
+  }
+
+  <span class="cmt">// Signe un hash hex string → signature DER hex</span>
+  <span class="type">String</span> <span class="fn">sign</span>(<span class="kw">const</span> <span class="type">String</span>& hexHash) {
+    <span class="kw">if</span> (!_initialized) <span class="kw">return</span> <span class="str">""</span>;
+    <span class="type">uint8_t</span> hashBytes[<span class="num">32</span>], sig[<span class="num">80</span>];
+    <span class="type">size_t</span> sigLen;
+    <span class="cmt">// Décoder hex → bytes</span>
+    <span class="kw">for</span>(<span class="type">int</span> i=<span class="num">0</span>; i&lt;<span class="num">32</span>; i++)
+      hashBytes[i] = strtoul(hexHash.substring(i*<span class="num">2</span>,i*<span class="num">2</span>+<span class="num">2</span>).c_str(), nullptr, <span class="num">16</span>);
+    
+    mbedtls_ecdsa_write_signature(&_ctx, MBEDTLS_MD_SHA256,
+      hashBytes, <span class="num">32</span>, sig, <span class="kw">sizeof</span>(sig), &sigLen,
+      mbedtls_ctr_drbg_random, &_ctr_drbg);
+    
+    <span class="type">String</span> sigHex = <span class="str">""</span>;
+    <span class="kw">for</span>(<span class="type">size_t</span> i=<span class="num">0</span>; i&lt;sigLen; i++) {
+      <span class="kw">if</span>(sig[i]&lt;<span class="num">0x10</span>) sigHex += <span class="str">"0"</span>;
+      sigHex += <span class="type">String</span>(sig[i], HEX);
+    }
+    <span class="kw">return</span> sigHex;
+  }
+};`,
+
+  mqtt: `<span class="cmt">// mqtt_client.h — Client MQTT avec reconnexion automatique</span>
+<span class="macro">#pragma once</span>
+<span class="macro">#include</span> <span class="str">&lt;PubSubClient.h&gt;</span>
+<span class="macro">#include</span> <span class="str">&lt;WiFiClient.h&gt;</span>
+<span class="macro">#include</span> <span class="str">&lt;WiFiClientSecure.h&gt;</span>
+
+<span class="kw">class</span> <span class="type">MQTTClient</span> {
+<span class="kw">private</span>:
+  WiFiClientSecure _wifiClient;
+  PubSubClient*    _client;
+  <span class="kw">const</span> <span class="type">char</span>*      _broker;
+  <span class="type">uint16_t</span>         _port;
+  <span class="type">unsigned long</span>    _lastReconnect = <span class="num">0</span>;
+  <span class="type">uint32_t</span>         _pubCount = <span class="num">0</span>;
+
+<span class="kw">public</span>:
+  <span class="type">void</span> <span class="fn">begin</span>(<span class="kw">const</span> <span class="type">char</span>* broker, <span class="type">uint16_t</span> port) {
+    _broker = broker; _port = port;
+    _wifiClient.setInsecure();  <span class="cmt">// TODO: cert pinning prod</span>
+    _client = <span class="kw">new</span> PubSubClient(_wifiClient);
+    _client-><span class="fn">setServer</span>(broker, port);
+    _client-><span class="fn">setBufferSize</span>(<span class="num">1024</span>);
+    _client-><span class="fn">setKeepAlive</span>(<span class="num">60</span>);
+    <span class="fn">reconnect</span>();
+  }
+
+  <span class="type">void</span> <span class="fn">setCallback</span>(MQTT_CALLBACK_SIGNATURE) {
+    _client-><span class="fn">setCallback</span>(callback);
+  }
+
+  <span class="type">bool</span> <span class="fn">publish</span>(<span class="kw">const</span> <span class="type">char</span>* topic, <span class="kw">const</span> <span class="type">String</span>& payload, <span class="type">bool</span> qos1=<span class="kw">true</span>) {
+    <span class="kw">if</span> (!_client-><span class="fn">connected</span>()) <span class="fn">reconnect</span>();
+    <span class="type">bool</span> ok = _client-><span class="fn">publish</span>(topic, payload.c_str(), qos1);
+    <span class="kw">if</span> (ok) _pubCount++;
+    <span class="kw">else</span> Serial.<span class="fn">println</span>(<span class="str">"[MQTT] Échec publication!"</span>);
+    <span class="kw">return</span> ok;
+  }
+
+  <span class="type">bool</span> <span class="fn">subscribe</span>(<span class="kw">const</span> <span class="type">char</span>* topic) {
+    <span class="kw">return</span> _client-><span class="fn">subscribe</span>(topic);
+  }
+
+  <span class="type">void</span> <span class="fn">loop</span>() {
+    <span class="kw">if</span> (!_client-><span class="fn">connected</span>()) {
+      <span class="kw">if</span> (millis() - _lastReconnect > <span class="num">5000</span>) <span class="fn">reconnect</span>();
+    }
+    _client-><span class="fn">loop</span>();
+  }
+
+<span class="kw">private</span>:
+  <span class="type">void</span> <span class="fn">reconnect</span>() {
+    <span class="type">int</span> tries = <span class="num">0</span>;
+    <span class="kw">while</span> (!_client-><span class="fn">connected</span>() && tries++ < <span class="num">3</span>) {
+      Serial.<span class="fn">print</span>(<span class="str">"[MQTT] Connexion..."</span>);
+      <span class="type">String</span> cid = <span class="str">"ESP32-CLedger-"</span> + <span class="type">String</span>(ESP.getEfuseMac(), HEX);
+      <span class="kw">if</span> (_client-><span class="fn">connect</span>(cid.c_str(), MQTT_USER, MQTT_PASS)) {
+        Serial.<span class="fn">println</span>(<span class="str">"OK"</span>);
+        <span class="cmt">// Re-souscrire aux topics de commande</span>
+        _client-><span class="fn">subscribe</span>(<span class="str">"carbon/v1/config"</span>);
+        _client-><span class="fn">subscribe</span>(<span class="str">"carbon/v1/reset"</span>);
+      } <span class="kw">else</span> {
+        Serial.<span class="fn">printf</span>(<span class="str">"Échec rc=%d, retry 5s\\n"</span>, _client-><span class="fn">state</span>());
+        delay(<span class="num">5000</span>);
+      }
+    }
+    _lastReconnect = millis();
+  }
+};`,
+
+  config: `<span class="cmt">// config.h — Configuration centrale du firmware</span>
+<span class="macro">#pragma once</span>
+
+<span class="cmt">// ── Identité du dispositif ───────────────────────────</span>
+<span class="macro">#define</span> <span class="def">DEVICE_ID</span>          <span class="str">"ESP32-CLedger-A3F7B291"</span>
+<span class="macro">#define</span> <span class="def">FW_VERSION</span>         <span class="str">"1.0.3"</span>
+<span class="macro">#define</span> <span class="def">PROJECT_NAME</span>       <span class="str">"Carbon Ledger"</span>
+
+<span class="cmt">// ── Wi-Fi ────────────────────────────────────────────</span>
+<span class="macro">#define</span> <span class="def">WIFI_SSID</span>          <span class="str">"Carbon-Lab"</span>
+<span class="macro">#define</span> <span class="def">WIFI_PASSWORD</span>      <span class="str">"*****"</span>  <span class="cmt">// À changer!</span>
+<span class="macro">#define</span> <span class="def">WIFI_TIMEOUT_MS</span>    <span class="num">15000</span>
+
+<span class="cmt">// ── MQTT ─────────────────────────────────────────────</span>
+<span class="macro">#define</span> <span class="def">MQTT_BROKER</span>        <span class="str">"broker.hivemq.com"</span>
+<span class="macro">#define</span> <span class="def">MQTT_PORT</span>          <span class="num">8883</span>  <span class="cmt">// TLS</span>
+<span class="macro">#define</span> <span class="def">MQTT_USER</span>          <span class="str">"carbonledger"</span>
+<span class="macro">#define</span> <span class="def">MQTT_PASS</span>          <span class="str">"*****"</span>
+
+<span class="cmt">// ── Topics MQTT ──────────────────────────────────────</span>
+<span class="macro">#define</span> <span class="def">TOPIC_MEASURES</span>     <span class="str">"carbon/v1/measures"</span>
+<span class="macro">#define</span> <span class="def">TOPIC_STATUS</span>       <span class="str">"carbon/v1/status"</span>
+<span class="macro">#define</span> <span class="def">TOPIC_CONFIG</span>       <span class="str">"carbon/v1/config"</span>
+<span class="macro">#define</span> <span class="def">TOPIC_RESET</span>        <span class="str">"carbon/v1/reset"</span>
+<span class="macro">#define</span> <span class="def">TOPIC_ACK</span>          <span class="str">"carbon/v1/ack"</span>
+
+<span class="cmt">// ── Capteur ──────────────────────────────────────────</span>
+<span class="macro">#define</span> <span class="def">PZEM_RX_PIN</span>        <span class="num">16</span>   <span class="cmt">// GPIO16 → UART2 RX</span>
+<span class="macro">#define</span> <span class="def">PZEM_TX_PIN</span>        <span class="num">17</span>   <span class="cmt">// GPIO17 → UART2 TX</span>
+<span class="macro">#define</span> <span class="def">PZEM_BAUD</span>          <span class="num">9600</span>
+
+<span class="cmt">// ── Mesures ──────────────────────────────────────────</span>
+<span class="macro">#define</span> <span class="def">SAMPLE_INTERVAL_MS</span> <span class="num">5000</span>    <span class="cmt">// Intervalle (ms)</span>
+<span class="macro">#define</span> <span class="def">VOLTAGE_MIN</span>        <span class="num">180.0f</span>  <span class="cmt">// Seuil bas (V)</span>
+<span class="macro">#define</span> <span class="def">VOLTAGE_MAX</span>        <span class="num">260.0f</span>  <span class="cmt">// Seuil haut (V)</span>
+<span class="macro">#define</span> <span class="def">MAX_POWER_W</span>        <span class="num">10000</span>   <span class="cmt">// Max 10kW</span>
+
+<span class="cmt">// ── CO₂ (IEA 2022) ──────────────────────────────────</span>
+<span class="macro">#define</span> <span class="def">EMISSION_FACTOR</span>    <span class="num">0.553f</span>  <span class="cmt">// kgCO₂/kWh — Tunisie STEG</span>
+
+<span class="cmt">// ── LED status ───────────────────────────────────────</span>
+<span class="macro">#define</span> <span class="def">LED_PIN</span>            <span class="num">2</span>
+<span class="cmt">// LED: OFF=erreur, blink lent=WiFi conn, blink rapide=mesure</span>
+
+<span class="cmt">// ── Bibliothèques requises (platformio.ini) ──────────</span>
+<span class="cmt">// lib_deps =
+//   dvarrel/PZEM-004T-v30@^1.1.2
+//   knolleary/PubSubClient@^2.8.0
+//   bblanchon/ArduinoJson@^7.0.0
+//   adafruit/Adafruit SSD1306@^2.5.7  (OLED optionnel)</span>`
+};
+
+function showFile(name) {
+  document.querySelectorAll('[id^="fb-"]').forEach(b => b.className = 'btn');
+  document.getElementById('fb-' + name).className = 'btn btn-green';
+  document.getElementById('code-display').innerHTML =
+    `<div class="code-block">${files[name]}</div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+//  START
+// ═══════════════════════════════════════════════════════
+showFile('main');
+update();
+</script>
+</body>
+</html>
